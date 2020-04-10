@@ -6,10 +6,10 @@ import { Piano, KeyboardShortcuts, MidiNumbers } from "react-piano";
 import "react-piano/dist/styles.css";
 var Soundfont = require("soundfont-player");
 
-const App: FC<{}> = () => {
+const App: FC<{ broker: string }> = ({ broker }) => {
     const [peerData, setPeerData, brokerId, connections, error] = usePeerState<{ type: string; value: number }>(
         { type: "init", value: 0 },
-        { brokerId: "playaway" }
+        { brokerId: broker }
     );
     const [instrument, setInstrument] = useState<any>(null);
     const playing = useRef<any[]>([]);

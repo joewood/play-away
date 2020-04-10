@@ -4,6 +4,8 @@ import "./App.css";
 import { useReceivePeerState } from "react-peer";
 import { Piano, KeyboardShortcuts, MidiNumbers } from "react-piano";
 import "react-piano/dist/styles.css";
+import useDimensions from "react-use-dimensions";
+
 var Soundfont = require("soundfont-player");
 
 const Input: FC<{ broker: string }> = ({ broker }) => {
@@ -19,8 +21,10 @@ const Input: FC<{ broker: string }> = ({ broker }) => {
         });
     }, []);
 
+    const [ref, { x, y, width }] = useDimensions();
+
     const firstNote = MidiNumbers.fromNote("c3");
-    const lastNote = MidiNumbers.fromNote("f5");
+    const lastNote = MidiNumbers.fromNote("f6");
     const keyboardShortcuts = KeyboardShortcuts.create({
         firstNote: firstNote,
         lastNote: lastNote,
@@ -34,31 +38,33 @@ const Input: FC<{ broker: string }> = ({ broker }) => {
             setActiveNotes((st) => [...st, peerData.value]);
         }
     }, [peerData]);
-    console.log("active ", activeNotes);
     return (
-        <div className="App">
-            <div className="App-header">Play Away</div>
-            <div style={{ flex: "1 1 auto" }}>
-                {!isConnected ? <p>Connecting...</p> : <p>Playing {activeNotes.join(",")}</p>}
+        <div className="App" ref={ref}>
+            <div className="App-header">
+                <a href="/">Play Away</a>
             </div>
             <div style={{ flexGrow: 1 }}>
                 <Piano
                     noteRange={{ first: firstNote, last: lastNote }}
                     activeNotes={activeNotes}
                     playNote={(midiNumber: number) => {
-                        console.log("Midi " + midiNumber);
                         playing.current[midiNumber] = instrument.play(midiNumber);
-
-                        // Play a given note - see notes below
                     }}
                     stopNote={(midiNumber: number) => {
                         if (playing.current && playing.current[midiNumber]) playing.current[midiNumber].stop();
-
-                        // Stop playing a given note - see notes below
                     }}
-                    width={1000}
+                    width={width}
                     keyboardShortcuts={keyboardShortcuts}
                 />
+            </div>
+            <div className="status">
+                {!isConnected ? (
+                    <span>Connecting...</span>
+                ) : (
+                    <span>
+                        Connected to {broker}. Playing {activeNotes.join(",")}
+                    </span>
+                )}
             </div>
         </div>
     );

@@ -1,50 +1,35 @@
-import React, { FC, useState, useEffect, useRef } from "react";
+import React, { FC, useRef, useCallback, useState } from "react";
 import "./App.css";
-import { usePeerState } from "react-peer";
 
-import { Piano, KeyboardShortcuts, MidiNumbers } from "react-piano";
-import "react-piano/dist/styles.css";
-var Soundfont = require("soundfont-player");
-
-const App: FC<{ broker: string }> = ({ broker }) => {
-    const [peerData, setPeerData, brokerId, connections, error] = usePeerState<{ type: string; value: number }>(
-        { type: "init", value: 0 },
-        { brokerId: broker }
-    );
-    const [instrument, setInstrument] = useState<any>(null);
-    const playing = useRef<any[]>([]);
-    const firstNote = MidiNumbers.fromNote("c3");
-    const lastNote = MidiNumbers.fromNote("f5");
-    const keyboardShortcuts = KeyboardShortcuts.create({
-        firstNote: firstNote,
-        lastNote: lastNote,
-        keyboardConfig: KeyboardShortcuts.HOME_ROW,
-    });
-    useEffect(() => {
-        var ac = new AudioContext();
-        Soundfont.instrument(ac, "acoustic_grand_piano", { soundfont: "MusyngKite" }).then(function (marimba: any) {
-            setInstrument(marimba);
-        });
+const App: FC<{}> = ({}) => {
+    const [state, setState] = useState("play" + Math.round(Math.random() * 100));
+    const changeNane = useCallback((event: any) => {
+        setState(event.target.value);
     }, []);
     return (
         <div className="App">
             <header className="App-header">
-                {error && <p>Error {error}</p>}
-                <p>Connect to {brokerId}</p>
+                <a href="/">Play Away</a>
             </header>
-            <Piano
-                noteRange={{ first: firstNote, last: lastNote }}
-                playNote={(midiNumber: number) => {
-                    setPeerData({ type: "play", value: midiNumber });
-                    playing.current[midiNumber] = instrument.play(midiNumber);
-                }}
-                stopNote={(midiNumber: number) => {
-                    setPeerData({ type: "stop", value: midiNumber });
-                    if (playing.current && playing.current[midiNumber]) playing.current[midiNumber].stop();
-                }}
-                width={1000}
-                keyboardShortcuts={keyboardShortcuts}
-            />
+            <div key="name" className="row">
+                <label>
+                    Enter Name
+                    <input name="name" onChange={changeNane} value={state} type="text" />
+                </label>
+            </div>
+            <div key="server" className="row">
+                <p>
+                    To be the player <a href={"/?server=" + state}>Click Here</a>
+                </p>
+            </div>
+            <div key="follower" className="row">
+                <p>
+                    To be the follower <a href={"/?broker=" + state}>Click Here</a>
+                </p>
+            </div>
+            <div className="status">
+                <span>Select Option: state</span>
+            </div>
         </div>
     );
 };

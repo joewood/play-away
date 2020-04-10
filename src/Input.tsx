@@ -41,9 +41,9 @@ const Input: FC<{ broker: string }> = ({ broker }) => {
     return (
         <div className="App" ref={ref}>
             <div className="App-header">
-                <a href="/">Play Away</a>
+                <a href="/">Play Away - Echoing "{broker}"</a>
             </div>
-            <div style={{ flexGrow: 1 }}>
+            <div style={{ flex: "0 0 auto" }}>
                 <Piano
                     noteRange={{ first: firstNote, last: lastNote }}
                     activeNotes={activeNotes}

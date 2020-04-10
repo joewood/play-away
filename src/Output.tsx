@@ -32,21 +32,23 @@ const App: FC<{ broker: string }> = ({ broker }) => {
     return (
         <div className="App" ref={ref}>
             <header className="App-header">
-                <a href="/">Play Away</a>
+                <a href="/">Play Away - Playing "{broker}"</a>
             </header>
-            <Piano
-                noteRange={{ first: firstNote, last: lastNote }}
-                playNote={(midiNumber: number) => {
-                    setPeerData({ type: "play", value: midiNumber });
-                    playing.current[midiNumber] = instrument.play(midiNumber);
-                }}
-                stopNote={(midiNumber: number) => {
-                    setPeerData({ type: "stop", value: midiNumber });
-                    if (playing.current && playing.current[midiNumber]) playing.current[midiNumber].stop();
-                }}
-                width={width}
-                keyboardShortcuts={keyboardShortcuts}
-            />
+            <div style={{ flex: "0 0 auto" }}>
+                <Piano
+                    noteRange={{ first: firstNote, last: lastNote }}
+                    playNote={(midiNumber: number) => {
+                        setPeerData({ type: "play", value: midiNumber });
+                        playing.current[midiNumber] = instrument.play(midiNumber);
+                    }}
+                    stopNote={(midiNumber: number) => {
+                        setPeerData({ type: "stop", value: midiNumber });
+                        if (playing.current && playing.current[midiNumber]) playing.current[midiNumber].stop();
+                    }}
+                    width={width}
+                    keyboardShortcuts={keyboardShortcuts}
+                />
+            </div>
             <div className="status">
                 {error ? <span>Error {JSON.stringify(error)}</span> : <span>Connected to {brokerId}</span>}
             </div>

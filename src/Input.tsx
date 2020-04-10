@@ -5,64 +5,39 @@ import { useReceivePeerState } from "react-peer";
 import { Piano, KeyboardShortcuts, MidiNumbers } from "react-piano";
 import "react-piano/dist/styles.css";
 import useDimensions from "react-use-dimensions";
-
-var Soundfont = require("soundfont-player");
+import { PianoInput, MidiSelect } from "./midi-components";
+import { MidiEvent, useActiveNotes, useMidiInputs, useMidiOutputs } from "./hooks";
 
 const Input: FC<{ broker: string }> = ({ broker }) => {
-    const [peerData, isConnected, error] = useReceivePeerState<{ type: string; value: number }>(broker);
-    const [instrument, setInstrument] = useState<any>(null);
-    const [activeNotes, setActiveNotes] = useState<number[]>([]);
-    const playing = useRef<any[]>([]);
+    const [peerData, isConnected, error] = useReceivePeerState<MidiEvent>(broker);
+    const remmoteActiveNotes = useActiveNotes(peerData || null, null);
+    const [ref, { width }] = useDimensions();
+    const [midiData, setMidiInput] = useMidiInputs();
+    const [pianoData, setPianoData] = useState<MidiEvent | null>(null);
+    const [play, setMidiOutput] = useMidiOutputs();
+    const midiActiveNotes = useActiveNotes(midiData, pianoData);
 
-    useEffect(() => {
-        var ac = new AudioContext();
-        Soundfont.instrument(ac, "acoustic_grand_piano", { soundfont: "MusyngKite" }).then(function (marimba: any) {
-            setInstrument(marimba);
-        });
-    }, []);
-
-    const [ref, { x, y, width }] = useDimensions();
-
-    const firstNote = MidiNumbers.fromNote("c3");
-    const lastNote = MidiNumbers.fromNote("f6");
-    const keyboardShortcuts = KeyboardShortcuts.create({
-        firstNote: firstNote,
-        lastNote: lastNote,
-        keyboardConfig: KeyboardShortcuts.HOME_ROW,
-    });
-    useEffect(() => {
-        if (!peerData) return;
-        if (peerData?.type === "stop") {
-            setActiveNotes((st) => st.filter((t) => t !== peerData.value));
-        } else if (peerData.type === "play") {
-            setActiveNotes((st) => [...st, peerData.value]);
-        }
-    }, [peerData]);
     return (
         <div className="App" ref={ref}>
-            <div className="App-header">
+            <header className="App-header">
                 <a href="/">Play Away - Echoing "{broker}"</a>
+            </header>
+            <MidiSelect key="select" onInputSelect={setMidiInput} onOutputSelect={setMidiOutput} />
+
+            <div style={{ flex: "0 0 auto" }}>
+                <p>Other</p>
+                <PianoInput activeNotes={remmoteActiveNotes} width={width} />
             </div>
             <div style={{ flex: "0 0 auto" }}>
-                <Piano
-                    noteRange={{ first: firstNote, last: lastNote }}
-                    activeNotes={activeNotes}
-                    playNote={(midiNumber: number) => {
-                        playing.current[midiNumber] = instrument.play(midiNumber);
-                    }}
-                    stopNote={(midiNumber: number) => {
-                        if (playing.current && playing.current[midiNumber]) playing.current[midiNumber].stop();
-                    }}
-                    width={width}
-                    keyboardShortcuts={keyboardShortcuts}
-                />
+                <p>You</p>
+                <PianoInput activeNotes={midiActiveNotes} onInput={setPianoData} width={width} />
             </div>
             <div className="status">
                 {!isConnected ? (
                     <span>Connecting...</span>
                 ) : (
                     <span>
-                        Connected to {broker}. Playing {activeNotes.join(",")}
+                        Connected to {broker}. Playing {remmoteActiveNotes.join(",")}
                     </span>
                 )}
             </div>

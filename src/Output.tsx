@@ -1,53 +1,43 @@
-import React, { FC, useState, useEffect, useRef } from "react";
-import "./App.css";
+import React, { FC, useCallback, useEffect, useState } from "react";
 import { usePeerState } from "react-peer";
-
-import { Piano, KeyboardShortcuts, MidiNumbers } from "react-piano";
-import "react-piano/dist/styles.css";
 import useDimensions from "react-use-dimensions";
-var Soundfont = require("soundfont-player");
+import "./App.css";
+import { MidiEvent, useActiveNotes, useMidiInputs, useMidiOutputs } from "./hooks";
+import { MidiSelect, PianoInput } from "./midi-components";
 
 const App: FC<{ broker: string }> = ({ broker }) => {
-    const [peerData, setPeerData, brokerId, connections, error] = usePeerState<{ type: string; value: number }>(
-        { type: "init", value: 0 },
+    const [peerData, setPeerData, brokerId, connections, error] = usePeerState<MidiEvent>(
+        { command: 0, note: 0, velocity: 0 },
         { brokerId: broker }
     );
-    const [instrument, setInstrument] = useState<any>(null);
-    const playing = useRef<any[]>([]);
-    const firstNote = MidiNumbers.fromNote("c3");
-    const lastNote = MidiNumbers.fromNote("f6");
-    const keyboardShortcuts = KeyboardShortcuts.create({
-        firstNote: firstNote,
-        lastNote: lastNote,
-        keyboardConfig: KeyboardShortcuts.HOME_ROW,
-    });
+    const [pianoData, setPianoData] = useState<MidiEvent | null>(null);
+    const [midiData, setMidiInput] = useMidiInputs();
+    const [play, setMidiOutput] = useMidiOutputs();
     const [ref, { x, y, width }] = useDimensions();
-
+    const onPianoInput = useCallback(
+        (event: MidiEvent) => {
+            setPeerData(event);
+            setPianoData(event);
+        },
+        [setPeerData, setPianoData]
+    );
     useEffect(() => {
-        var ac = new AudioContext();
-        Soundfont.instrument(ac, "acoustic_grand_piano", { soundfont: "MusyngKite" }).then(function (marimba: any) {
-            setInstrument(marimba);
-        });
-    }, []);
+        if (!!midiData) setPeerData(midiData);
+    }, [midiData, setPeerData]);
+    const midiActiveNotes = useActiveNotes(midiData, pianoData);
     return (
         <div className="App" ref={ref}>
             <header className="App-header">
                 <a href="/">Play Away - Playing "{broker}"</a>
             </header>
+            <MidiSelect key="select" onInputSelect={setMidiInput} onOutputSelect={setMidiOutput} />
             <div style={{ flex: "0 0 auto" }}>
-                <Piano
-                    noteRange={{ first: firstNote, last: lastNote }}
-                    playNote={(midiNumber: number) => {
-                        setPeerData({ type: "play", value: midiNumber });
-                        playing.current[midiNumber] = instrument.play(midiNumber);
-                    }}
-                    stopNote={(midiNumber: number) => {
-                        setPeerData({ type: "stop", value: midiNumber });
-                        if (playing.current && playing.current[midiNumber]) playing.current[midiNumber].stop();
-                    }}
-                    width={width}
-                    keyboardShortcuts={keyboardShortcuts}
-                />
+                <p>Other</p>
+                <PianoInput width={width} activeNotes={[]} />
+            </div>
+            <div style={{ flex: "0 0 auto" }}>
+                <p>You</p>
+                <PianoInput width={width} onInput={onPianoInput} activeNotes={midiActiveNotes} />
             </div>
             <div className="status">
                 {error ? <span>Error {JSON.stringify(error)}</span> : <span>Connected to {brokerId}</span>}

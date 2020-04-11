@@ -68,9 +68,22 @@ export const MidiSelect: FC<MidiSelectProps> = ({ onInputSelect, onOutputSelect 
     );
 };
 
-export const MidiStatus: FC<{}> = () => {
+export const StatusBar: FC<{ error?: any; session?: string; connected?: boolean; connections?: string[] }> = ({
+    error,
+    connected,
+    connections,
+    session,
+}) => {
     const webMidi = useMidi();
-    return <span>Web Midi Supported: {webMidi === undefined ? "Waiting" : webMidi === null ? "No" : "Enabled"}</span>;
+    return (
+        <div className="status">
+            <span>Web Midi Supported: {webMidi === undefined ? "Waiting" : webMidi === null ? "No" : "Enabled"}</span>
+            {!!error && <span style={{ color: "red" }}>Error: {JSON.stringify(error)}</span>}
+            {!!session && <span>{`Session: ${session}`}</span>}
+            {connected !== undefined && <span>{`Connected: ${connected}`}</span>}
+            {!!connections && <span>{`Connections: ${connections.join(",")}`}</span>}
+        </div>
+    );
 };
 
 interface PianoProps {

@@ -1,11 +1,10 @@
 import React, { FC, useRef, useCallback, useState, useEffect } from "react";
 import "./App.css";
 import { useMidi } from "./hooks";
-import { MidiSelect, MidiStatus } from "./midi-components";
+import { MidiSelect, StatusBar } from "./midi-components";
 
 const App: FC<{}> = ({}) => {
     const [state, setState] = useState("play" + Math.round(Math.random() * 100));
-    const webMidi = useMidi();
     const changeNane = useCallback((event: any) => {
         setState(event.target.value);
     }, []);
@@ -30,13 +29,7 @@ const App: FC<{}> = ({}) => {
                     To be the follower <a href={"/?broker=" + state}>Click Here</a>
                 </p>
             </div>
-            <div key="WebMidi" className="row">
-                <MidiSelect onInputSelect={(inputs) => {}} />
-            </div>
-            <div className="status">
-                <MidiStatus />
-                <span>Session Name: state</span>
-            </div>
+            <StatusBar session={state} />
         </div>
     );
 };

@@ -6,7 +6,8 @@ import { MidiEvent, useActiveNotes, useMidiInputs, useMidiOutputs } from "./hook
 import { MidiSelect, PianoInput, StatusBar } from "./midi-components";
 import { connect } from "http2";
 
-function useTimeout(connected: boolean, seconds: number, cb: () => void) {
+/** Simple hook that runs the callback after specified seconds if not connected */
+function useTimeoutIfNotConnected(connected: boolean, seconds: number, cb: () => void) {
     const ref = useRef<any>(null);
     const timeout = useCallback(() => {
         if (connected) return;
@@ -21,31 +22,33 @@ function useTimeout(connected: boolean, seconds: number, cb: () => void) {
     }, [connected, seconds, timeout, ref]);
 }
 
+/** Hook that switches the name of a server after a timeout if not connected */
+function useFlipName(connected: boolean, name: string, setName: (name: string) => void, statefulName: string) {
+    const callback = useCallback(() => setName(name === statefulName ? "SERVER" + Math.random() * 1000 : name), [
+        statefulName,
+        name,
+        setName,
+    ]);
+    useTimeoutIfNotConnected(connected, statefulName === name ? 10 : 0.5, callback);
+}
+
 interface RoomProps {
     sendingName: string;
     receivingName: string;
 }
 
 const Teacher: FC<RoomProps> = ({ sendingName, receivingName }) => {
-    const [sendName, setSendName] = useState(sendingName);
+    const [sendingRetryName, setSendingRetryName] = useState(sendingName);
+    const [receivingRetryName, setReceivingRetryName] = useState(receivingName);
 
     const [, sendData, , sendingConnections, errorSend] = usePeerState<MidiEvent>(
         { command: 0, note: 0, velocity: 0 },
-        { brokerId: sendName }
+        { brokerId: sendingRetryName }
     );
-    const cb2 = useCallback(
-        () => setSendName(sendName === sendingName ? "SERVER" + Math.random() * 1000 : sendingName),
-        [sendingName, sendName]
-    );
-    useTimeout(sendingConnections.length > 0, 10, cb2);
+    const [receiveData, isReceiveConnected, errorReceive] = useReceivePeerState<MidiEvent>(receivingRetryName);
 
-    const [recName, setRecName] = useState(receivingName);
-    const [receiveData, isReceiveConnected, errorReceive] = useReceivePeerState<MidiEvent>(recName);
-    const cb = useCallback(
-        () => setRecName(recName === receivingName ? "SERVER" + Math.random() * 1000 : receivingName),
-        [receivingName, recName]
-    );
-    useTimeout(isReceiveConnected, 10, cb);
+    useFlipName(sendingConnections.length > 0, sendingName, setSendingRetryName, sendingRetryName);
+    useFlipName(isReceiveConnected, receivingName, setReceivingRetryName, receivingRetryName);
 
     const [pianoData, setPianoData] = useState<MidiEvent | null>(null);
     const [midiInputData, setMidiInput] = useMidiInputs();
@@ -81,11 +84,12 @@ const Teacher: FC<RoomProps> = ({ sendingName, receivingName }) => {
                     enableKeyboardShortcuts
                     onInput={onPianoInput}
                     activeNotes={midiActiveNotes}
+                    disabled={sendingConnections.length === 0}
                 />
             </div>
             <StatusBar
                 error={errorSend || errorReceive}
-                session={`${sendName}/${recName}`}
+                session={`${sendingRetryName}/${receivingRetryName}`}
                 connections={connectionNanes}
             />
         </div>

@@ -1,17 +1,24 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface MidiEvent {
+    /** Command part 4 MSB of the byte tripple - 8: STOP, 9: PLAY */
     command: number;
+    /** Byte number for the note */
     note: number;
+    /** Velocity of the note */
     velocity: number;
 }
 export const PLAY = 0x09;
 export const STOP = 0x08;
 
+interface MidiDevices {
+    inputs: WebMidi.MIDIInput[];
+    outputs: WebMidi.MIDIOutput[];
+}
+
+/** Hook to return the set of Input and Output Midi Devices */
 export function useMidi() {
-    const [webMidi, setWebMidi] = useState<
-        { inputs: WebMidi.MIDIInput[]; outputs: WebMidi.MIDIOutput[] } | null | undefined
-    >();
+    const [webMidi, setWebMidi] = useState<MidiDevices | null | undefined>();
     useEffect(() => {
         if (!!navigator.requestMIDIAccess) {
             navigator.requestMIDIAccess().then(
@@ -30,6 +37,7 @@ export function useMidi() {
     return webMidi;
 }
 
+/** Convert a byte array to a typed Midi Event */
 export function getEventData(data: Uint8Array): MidiEvent {
     // status is the first byte.
     let status = data[0];
@@ -45,6 +53,7 @@ export function getEventData(data: Uint8Array): MidiEvent {
     return { command, note, velocity };
 }
 
+/** Convert command, note and velocity to a Byte Array  */
 export function getBinary({ command, note, velocity }: MidiEvent): Uint8Array {
     const data = new Uint8Array(3);
     data[0] = command >>> -4;
@@ -53,6 +62,7 @@ export function getBinary({ command, note, velocity }: MidiEvent): Uint8Array {
     return data;
 }
 
+/** Midi Input Hook, returns the stream of data from midi devices set using the setInputs function */
 export function useMidiInputs() {
     const [inputs, setInputs] = useState<WebMidi.MIDIInput[]>([]);
     const [data, setData] = useState<MidiEvent | null>(null);
@@ -98,24 +108,29 @@ export function useMidiOutputs() {
     return [play, setOutputs] as [typeof play, typeof setOutputs];
 }
 
+/** Hook to manage the state of which midi-notes are actively playing
+ * Two events are accepted, as two input channels (e.g. on screen keyboard and connected device)
+ */
 export function useActiveNotes(event: MidiEvent | null, localEvent: MidiEvent | null) {
+    // the state of active notes - maintained in an array using midi-codes.
+    const [activeNotes, setActiveNotes] = useState<number[]>([]);
     const command = event?.command || 0;
     const note = event?.note || 0;
-    const [activeNotes, setActiveNotes] = useState<number[]>([]);
     useEffect(() => {
-        setActiveNotes((state) => {
-            if (command === STOP) return state.filter((s) => s !== note);
-            if (command === PLAY) return [...state, note];
-            return state;
+        // use the callback form of setting state to ensure no race conditions
+        setActiveNotes((notes) => {
+            if (command === STOP) return notes.filter((activeNote) => activeNote !== note);
+            if (command === PLAY) return [...notes, note];
+            return notes;
         });
     }, [command, note]);
     const localCommand = localEvent?.command || 0;
     const localNote = localEvent?.note || 0;
     useEffect(() => {
-        setActiveNotes((state) => {
-            if (localCommand === STOP) return state.filter((s) => s !== localNote);
-            if (localCommand === PLAY) return [...state, localNote];
-            return state;
+        setActiveNotes((notes) => {
+            if (localCommand === STOP) return notes.filter((note) => note !== localNote);
+            if (localCommand === PLAY) return [...notes, localNote];
+            return notes;
         });
     }, [localCommand, localNote]);
     return activeNotes;

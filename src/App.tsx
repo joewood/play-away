@@ -1,7 +1,6 @@
-import React, { FC, useRef, useCallback, useState, useEffect } from "react";
+import React, { FC, useCallback, useState } from "react";
 import "./App.css";
-import { useMidi } from "./hooks";
-import { MidiSelect, StatusBar } from "./midi-components";
+import { StatusBar } from "./midi-components";
 
 const App: FC<{}> = ({}) => {
     const [state, setState] = useState("play" + Math.round(Math.random() * 100));

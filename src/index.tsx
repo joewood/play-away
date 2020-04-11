@@ -10,9 +10,9 @@ const student = params.get("student");
 ReactDOM.render(
     <React.StrictMode>
         {teacher !== null ? (
-            <Player sendingName={"TCH_" + teacher} receivingName={"STU" + teacher} />
+            <Player sendingName={"TCH_" + teacher} receivingName={"STU_" + teacher} />
         ) : student !== null ? (
-            <Player sendingName={"STU_" + student} receivingName={"STU" + student} />
+            <Player sendingName={"STU_" + student} receivingName={"TCH_" + student} />
         ) : (
             <App />
         )}

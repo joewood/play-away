@@ -1,10 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
-import Output from "./Output";
+import Output from "./teacher";
 import * as serviceWorker from "./serviceWorker";
 import App from "./App";
-import Input from "./Input";
+import Student from "./student";
 const params = new URLSearchParams(document.location.search.substring(1));
 
 const broker = params.get("broker");
@@ -12,7 +12,7 @@ const server = params.get("server");
 ReactDOM.render(
     <React.StrictMode>
         {broker !== null ? (
-            <Input broker={broker || "playaway"} />
+            <Student broker={broker || "playaway"} />
         ) : server !== null ? (
             <Output broker={server} />
         ) : (

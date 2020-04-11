@@ -4,6 +4,7 @@
     align-items: stretch;
     flex-direction: column;
     height: 100vh;
+    touch-action: manipulation;
 }
 
 .App-header {

@@ -146,8 +146,8 @@ export const PianoInput: FC<PianoProps> = ({
     return (
         <Piano
             noteRange={{ first: firstNote, last: lastNote }}
-            playNoteInput={onPlayNoteInput}
-            stopNoteInput={onStopNoteInput}
+            onPlayNoteInput={onPlayNoteInput}
+            onPtopNoteInput={onStopNoteInput}
             playNote={onPlayNote}
             stopNote={onStopNote}
             width={width}

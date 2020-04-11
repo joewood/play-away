@@ -20,12 +20,12 @@ const App: FC<{}> = ({}) => {
             </div>
             <div key="server" className="row">
                 <p>
-                    To be the player <a href={"/?server=" + state}>Click Here</a>
+                    To be the player <a href={"/?teacher=" + state}>Click Here</a>
                 </p>
             </div>
             <div key="follower" className="row">
                 <p>
-                    To be the follower <a href={"/?broker=" + state}>Click Here</a>
+                    To be the follower <a href={"/?student=" + state}>Click Here</a>
                 </p>
             </div>
             <StatusBar session={state} />

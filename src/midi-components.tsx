@@ -90,13 +90,17 @@ interface PianoProps {
     width: number;
     activeNotes?: number[];
     instrumentName?: string | null;
+    disabled?: boolean;
+    enableKeyboardShortcuts?: boolean;
     onInput?: (event: MidiEvent) => void;
 }
 export const PianoInput: FC<PianoProps> = ({
     onInput,
     width,
     activeNotes,
+    disabled = false,
     instrumentName = "acoustic_grand_piano",
+    enableKeyboardShortcuts = false,
 }) => {
     const [instrument, setInstrument] = useState<any>(null);
     const firstNote = MidiNumbers.fromNote("c3");
@@ -138,13 +142,17 @@ export const PianoInput: FC<PianoProps> = ({
         },
         [playing]
     );
-    const keyboardShortcuts = KeyboardShortcuts.create({
-        firstNote: firstNote,
-        lastNote: lastNote,
-        keyboardConfig: KeyboardShortcuts.HOME_ROW,
-    });
+    const keyboardShortcuts =
+        (enableKeyboardShortcuts &&
+            KeyboardShortcuts.create({
+                firstNote: firstNote,
+                lastNote: lastNote,
+                keyboardConfig: KeyboardShortcuts.HOME_ROW,
+            })) ||
+        undefined;
     return (
         <Piano
+            disabled={disabled}
             noteRange={{ first: firstNote, last: lastNote }}
             onPlayNoteInput={onPlayNoteInput}
             onStopNoteInput={onStopNoteInput}

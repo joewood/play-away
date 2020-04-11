@@ -27,7 +27,7 @@ interface RoomProps {
 }
 
 const Teacher: FC<RoomProps> = ({ sendingName, receivingName }) => {
-    const [sendName, setSendName] = useState(receivingName);
+    const [sendName, setSendName] = useState(sendingName);
 
     const [, sendData, , sendingConnections, errorSend] = usePeerState<MidiEvent>(
         { command: 0, note: 0, velocity: 0 },
@@ -85,7 +85,7 @@ const Teacher: FC<RoomProps> = ({ sendingName, receivingName }) => {
             </div>
             <StatusBar
                 error={errorSend || errorReceive}
-                session={`${sendingName}/${recName}`}
+                session={`${sendName}/${recName}`}
                 connections={connectionNanes}
             />
         </div>

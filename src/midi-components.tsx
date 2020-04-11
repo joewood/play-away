@@ -2,17 +2,65 @@ import React, { FC, useRef, useCallback, useState, useEffect, EventHandler, Form
 import { useMidi, MidiEvent, PLAY, STOP } from "./hooks";
 import { Piano, KeyboardShortcuts, MidiNumbers } from "react-piano";
 import "react-piano/dist/styles.css";
-var Soundfont = require("soundfont-player");
+import Soundfont from "soundfont-player";
+import styled from "styled-components";
+
+interface HeaderProps extends MidiSelectProps {
+    name: string;
+    className?: string;
+}
+
+const _Header: FC<HeaderProps> = ({ className, name, onInputSelect }) => {
+    return (
+        <header className={className}>
+            <a href="/">/PlayAway</a>
+            <div>
+                <span>Play Away:</span>
+                <span>{name}</span>
+            </div>
+            <div>
+                <MidiSelect onInputSelect={onInputSelect} />
+            </div>
+        </header>
+    );
+};
+export const Header = styled(_Header)`
+    background-color: #282c34;
+    flex: 0 0 calc(40px + 2vmin);
+    display: flex;
+    outline-style: solid;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    font-size: calc(10px + 2vmin);
+    color: white;
+    & > a {
+        text-shadow: 1px 0 5px rgba(192, 192, 255, 1);
+        font-size: 20px;
+        color: rgb(224, 224, 255);
+        text-decoration: none;
+        padding: 10px;
+    }
+    & > div:nth-child(2) {
+        padding: 2px;
+        > span:first-child {
+            font-weight: bold;
+        }
+        > span:nth-child(2) {
+            font-style: italic;
+        }
+    }
+`;
 
 interface MidiSelectProps {
     onInputSelect?: (inputs: WebMidi.MIDIInput[]) => void;
-    onOutputSelect?: (outputs: WebMidi.MIDIOutput[]) => void;
+    className?: string;
+    // onOutputSelect?: (outputs: WebMidi.MIDIOutput[]) => void;
 }
 
-export const MidiSelect: FC<MidiSelectProps> = ({ onInputSelect, onOutputSelect }) => {
+const _MidiSelect: FC<MidiSelectProps> = ({ onInputSelect, className }) => {
     const webMidi = useMidi();
     const [input, setInput] = useState<WebMidi.MIDIInput[]>([]);
-    const [output, setOutput] = useState<WebMidi.MIDIOutput[]>([]);
     const onInputChange = useCallback<FormEventHandler<HTMLSelectElement>>(
         (event) => {
             if (!webMidi) return;
@@ -21,52 +69,40 @@ export const MidiSelect: FC<MidiSelectProps> = ({ onInputSelect, onOutputSelect 
         },
         [webMidi]
     );
-    const onOutputChange = useCallback<FormEventHandler<HTMLSelectElement>>(
-        (event) => {
-            if (!webMidi) return;
-            const opts = Array.from(event.currentTarget.selectedOptions).map((v) => v.value);
-            setOutput(webMidi.outputs.filter((i) => opts.includes(i.id)));
-        },
-        [webMidi]
-    );
-    useEffect(() => {
-        if (!!onOutputSelect) onOutputSelect(output);
-    }, [output, onOutputSelect]);
     useEffect(() => {
         if (!!onInputSelect) onInputSelect(input);
     }, [input, onInputSelect]);
-
+    // const [output, setOutput] = useState<WebMidi.MIDIOutput[]>([]);
+    // const onOutputChange = useCallback<FormEventHandler<HTMLSelectElement>>(
+    //     (event) => {
+    //         if (!webMidi) return;
+    //         const opts = Array.from(event.currentTarget.selectedOptions).map((v) => v.value);
+    //         setOutput(webMidi.outputs.filter((i) => opts.includes(i.id)));
+    //     },
+    //     [webMidi]
+    // );
+    // useEffect(() => {
+    //     if (!!onOutputSelect) onOutputSelect(output);
+    // }, [output, onOutputSelect]);
+    if (!webMidi) return <div className={className}></div>;
     return (
-        <div key="WebMidi" className="row">
-            <p>
-                <label>
-                    <div>Input Device:</div>
-                    <select onChange={onInputChange}>
-                        {webMidi &&
-                            webMidi.inputs.map((v, i) => (
-                                <option key={i} value={v.id}>
-                                    {v.name}
-                                </option>
-                            ))}
-                    </select>
-                </label>
-            </p>
-            <p>
-                <label>
-                    <div>Output Device:</div>
-                    <select onChange={onOutputChange}>
-                        {webMidi &&
-                            webMidi.outputs.map((v, i) => (
-                                <option key={i} value={v.id}>
-                                    {v.name}
-                                </option>
-                            ))}
-                    </select>
-                </label>
-            </p>
+        <div className={className}>
+            <div>Midi Input</div>
+            <select onChange={onInputChange}>
+                {webMidi &&
+                    webMidi.inputs.map((v, i) => (
+                        <option key={i} value={v.id}>
+                            {v.name}
+                        </option>
+                    ))}
+            </select>
         </div>
     );
 };
+const MidiSelect = styled(_MidiSelect)`
+    font-size: 12px;
+    padding-right: 10px;
+`;
 
 export const StatusBar: FC<{ error?: any; session?: string; connected?: boolean; connections?: string[] }> = ({
     error,
@@ -87,11 +123,17 @@ export const StatusBar: FC<{ error?: any; session?: string; connected?: boolean;
 };
 
 interface PianoProps {
+    /** Screen width in pixels */
     width: number;
+    /** Current active playing notes */
     activeNotes?: number[];
+    /** name of the instrument to play */
     instrumentName?: string | null;
+    /** Disable and grey out the piano */
     disabled?: boolean;
+    /** Overlay keyboard shortcuts and use keyboard */
     enableKeyboardShortcuts?: boolean;
+    /** Key press event */
     onInput?: (event: MidiEvent) => void;
 }
 export const PianoInput: FC<PianoProps> = ({
@@ -113,10 +155,10 @@ export const PianoInput: FC<PianoProps> = ({
             (window as any).webkitAudioContext || // Safari and old versions of Chrome
             false;
         if (!AudioContext) return;
-        var ac = new AudioContext();
-        Soundfont.instrument(ac, instrumentName, { soundfont: "MusyngKite" }).then(function (marimba: any) {
-            setInstrument(marimba);
-        });
+        const audioContext = new AudioContext();
+        Soundfont.instrument(audioContext, instrumentName as any, { soundfont: "MusyngKite" }).then((instrument) =>
+            setInstrument(instrument)
+        );
     }, [instrumentName]);
     const onStopNoteInput = useCallback(
         (midiNumber: number) => {

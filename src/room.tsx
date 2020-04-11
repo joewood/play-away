@@ -3,8 +3,7 @@ import { usePeerState, useReceivePeerState } from "react-peer";
 import useDimensions from "react-use-dimensions";
 import "./App.css";
 import { MidiEvent, useActiveNotes, useMidiInputs, useMidiOutputs } from "./hooks";
-import { MidiSelect, PianoInput, StatusBar } from "./midi-components";
-import { connect } from "http2";
+import { PianoInput, StatusBar, Header } from "./midi-components";
 
 /** Simple hook that runs the callback after specified seconds if not connected */
 function useTimeoutIfNotConnected(connected: boolean, seconds: number, cb: () => void) {
@@ -69,10 +68,8 @@ const Teacher: FC<RoomProps> = ({ sendingName, receivingName }) => {
     const remoteActiveNotes = useActiveNotes(receiveData || null, null);
     return (
         <div className="App" ref={ref}>
-            <header className="App-header">
-                <a href="/">Play Away - Playing "{sendingName}"</a>
-            </header>
-            <MidiSelect key="select" onInputSelect={setMidiInput} onOutputSelect={setMidiOutput} />
+            <Header name={sendingName} onInputSelect={setMidiInput} />
+            {/* <MidiSelect key="select" onInputSelect={setMidiInput} onOutputSelect={setMidiOutput} /> */}
             <div style={{ flex: "0 0 auto", pointerEvents: "none", marginLeft: 30, marginRight: 30 }}>
                 <p>Remote: {isReceiveConnected ? "Connected" : "Not Connected"}</p>
                 <PianoInput disabled={!isReceiveConnected} width={width - 60} activeNotes={remoteActiveNotes} />

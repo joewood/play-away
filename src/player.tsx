@@ -57,19 +57,19 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                     isReceiver={isReceiver}
                     broker={brokerId || ""}
                 />
-                <div style={{ flex: "0 0 auto", pointerEvents: "none", marginLeft: 30, marginRight: 30 }}>
+                <div style={{ flex: "0 0 auto", pointerEvents: "none", marginLeft: 50, marginRight: 50 }}>
                     <p>Remote: {isReceiveConnected ? "Connected" : "Not Connected"}</p>
                     <PianoInput
                         disabled={!isReceiveConnected}
                         instrumentName={instrument}
-                        width={width - 80}
+                        width={width - 100}
                         activeNotes={remoteActiveNotes}
                     />
                 </div>
                 <div style={{ flex: "0 0 auto", marginLeft: 5, marginRight: 5 }}>
                     <p>You: {sendingConnections.length > 0 ? "Sending" : "Not Sending"} </p>
                     <PianoInput
-                        width={width - 50}
+                        width={width - 10}
                         enableKeyboardShortcuts
                         onInput={onPianoInput}
                         activeNotes={midiActiveNotes}

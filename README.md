@@ -27,4 +27,4 @@ This initial prototype only took a few hours because it was built with some grea
 
 -   [PeerJS](https://peerjs.com) with it's JavaScript client library for abstracting WebRTC
 -   [Soundfont-player](https://github.com/danigb/soundfont-player) and [Midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)
--   [React Piano](React Piano) for the on-screen piano keyboard
+-   [React Piano](https://github.com/kevinsqi/react-piano) for the on-screen piano keyboard

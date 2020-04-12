@@ -12,9 +12,7 @@ interface HeaderProps extends MidiSelectProps, InstrumentSelectProps {
     broker?: string;
 }
 
-const url = `${window.location.protocol}//${window.location.hostname}${
-    window.location.port === "443" ? "" : ":" + window.location.port
-}`;
+const url = window.location.toString();
 
 const _Header: FC<HeaderProps> = ({
     className,
@@ -25,7 +23,7 @@ const _Header: FC<HeaderProps> = ({
     instrument,
     onInstrumentSelect,
 }) => {
-    const joinUrl = `${url}/?broker=${broker}`;
+    const joinUrl = `${url}?broker=${broker}`;
     return (
         <header className={className}>
             <a href="/">/PlayAway</a>

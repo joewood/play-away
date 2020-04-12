@@ -1,11 +1,10 @@
 import React, { FC } from "react";
 import Clipboard from "react-clipboard.js";
 
-const port = window.location.port;
-const url = `${window.location.protocol}//${window.location.hostname}${port === "443" ? "" : `:${port}`}`;
+const url = `${window.location.toString()}`;
 
 export const Welcome: FC<{ broker: string }> = ({ broker }) => {
-    const joinUrl = `${url}/?broker=${broker}`;
+    const joinUrl = `${url}?broker=${broker}`;
     return (
         <>
             <h1>PlayAway</h1>

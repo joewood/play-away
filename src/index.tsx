@@ -1,20 +1,30 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import "./index.css";
-import Player from "./room";
-import App from "./App";
+import PlayerSizer from "./player";
+import { createGlobalStyle } from "styled-components";
+
+const GlobalStyle = createGlobalStyle`
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  `;
+
 const params = new URLSearchParams(document.location.search.substring(1));
 
-const teacher = params.get("teacher");
-const student = params.get("student");
+const override = params.get("override");
+const broker = params.get("broker");
 ReactDOM.render(
     <React.StrictMode>
-        {teacher !== null ? (
-            <Player sendingName={"TCH_" + teacher} receivingName={"STU_" + teacher} />
-        ) : student !== null ? (
-            <Player sendingName={"STU_" + student} receivingName={"TCH_" + student} />
+        <GlobalStyle />
+        {broker !== null ? (
+            <PlayerSizer isReceiver={true} override="" broker={broker} />
         ) : (
-            <App />
+            <PlayerSizer isReceiver={false} override={override || ""} />
         )}
     </React.StrictMode>,
     document.getElementById("root")

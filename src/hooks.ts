@@ -64,7 +64,7 @@ export function getBinary({ command, note, velocity }: MidiEvent): Uint8Array {
 
 /** Midi Input Hook, returns the stream of data from midi devices set using the setInputs function */
 export function useMidiInputs() {
-    const [inputs, setInputs] = useState<WebMidi.MIDIInput[]>([]);
+    const [midiInput, setInput] = useState<WebMidi.MIDIInput>();
     const [data, setData] = useState<MidiEvent | null>(null);
     const onData = useCallback(
         (msg: WebMidi.MIDIMessageEvent) => {
@@ -77,15 +77,14 @@ export function useMidiInputs() {
         [setData]
     );
     useEffect(() => {
-        for (const midiInput of inputs) {
-            midiInput.open().then((x) => {
-                console.log("Setting Up Input Device", x);
-                console.log("--Connected Up", midiInput.connection);
-                midiInput.addEventListener("midimessage", onData);
-            });
-        }
-    }, [onData, inputs]);
-    return [data, setInputs] as [MidiEvent | null, typeof setInputs];
+        if (!midiInput) return;
+        midiInput.open().then((x) => {
+            console.log("Setting Up Input Device", x);
+            console.log("--Connected Up", midiInput.connection);
+            midiInput.addEventListener("midimessage", onData);
+        });
+    }, [onData, midiInput]);
+    return [data, midiInput, setInput] as [MidiEvent | null, WebMidi.MIDIInput | undefined, typeof setInput];
 }
 
 export function useMidiOutputs() {
@@ -111,26 +110,32 @@ export function useMidiOutputs() {
 /** Hook to manage the state of which midi-notes are actively playing
  * Two events are accepted, as two input channels (e.g. on screen keyboard and connected device)
  */
-export function useActiveNotes(event: MidiEvent | null, localEvent: MidiEvent | null) {
+export function useActiveNotes(midiEvent: MidiEvent | null, localEvent: MidiEvent | null) {
     // the state of active notes - maintained in an array using midi-codes.
     const [activeNotes, setActiveNotes] = useState<number[]>([]);
-    const command = event?.command || 0;
-    const note = event?.note || 0;
+    const midiCommand = midiEvent?.command || 0;
+    const midiNote = midiEvent?.note || 0;
     useEffect(() => {
         // use the callback form of setting state to ensure no race conditions
-        setActiveNotes((notes) => {
-            if (command === STOP) return notes.filter((activeNote) => activeNote !== note);
-            if (command === PLAY) return [...notes, note];
-            return notes;
+        setActiveNotes((prevActiveNotes) => {
+            if (midiCommand === STOP) {
+                if (prevActiveNotes.find((note) => note === midiNote) === undefined) return prevActiveNotes;
+                return prevActiveNotes.filter((activeNote) => activeNote !== midiNote);
+            }
+            if (midiCommand === PLAY) return [...prevActiveNotes, midiNote];
+            return prevActiveNotes;
         });
-    }, [command, note]);
+    }, [midiCommand, midiNote]);
     const localCommand = localEvent?.command || 0;
     const localNote = localEvent?.note || 0;
     useEffect(() => {
-        setActiveNotes((notes) => {
-            if (localCommand === STOP) return notes.filter((note) => note !== localNote);
-            if (localCommand === PLAY) return [...notes, localNote];
-            return notes;
+        setActiveNotes((prevActiveNotes) => {
+            if (localCommand === STOP) {
+                if (prevActiveNotes.find((note) => note === localNote) === undefined) return prevActiveNotes;
+                return prevActiveNotes.filter((note) => note !== localNote);
+            }
+            if (localCommand === PLAY) return [...prevActiveNotes, localNote];
+            return prevActiveNotes;
         });
     }, [localCommand, localNote]);
     return activeNotes;

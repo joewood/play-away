@@ -1,3 +1,4 @@
+// just a list of musical instruments supported by midi
 export const instrumentList = [
     "accordion",
     "acoustic_bass",

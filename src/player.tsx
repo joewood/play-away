@@ -1,8 +1,8 @@
-import React, { memo, useCallback, useEffect, useMemo, useState, forwardRef, RefAttributes, useRef } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import useDimensions from "react-use-dimensions";
 import styled from "styled-components";
 import { Header } from "./header";
-import { MidiEvent, useActiveNotes, useMidiInputs, useMidiOutputs } from "./hooks";
+import { MidiEvent, useActiveNotes, useMidiInputs } from "./hooks";
 import { PianoInput, StatusBar } from "./midi-components";
 import usePeer from "./usePeer";
 import { Welcome } from "./welcome";
@@ -21,7 +21,6 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
         broker,
         { brokerId: override }
     );
-    // console.log("Receive COnnected ", isReceiveConnected);
     const [pianoData, setPianoData] = useState<MidiEvent | null>(null);
     const [instrument, setInstrument] = useState("acoustic_grand_piano");
     const [midiInputData, midiInput, setMidiInput] = useMidiInputs();

@@ -12,7 +12,7 @@ const useReceivePeerState = <TData extends {}>(
 ): [TData | undefined, (data: TData) => void, Peer.DataConnection[], boolean, string | undefined, any] => {
     const [receiveData, setReceiveData] = useState<TData | undefined>(undefined);
     const [isReceiveConnected, setReceiveConnected] = useState(false);
-    const [localPeer, setLocalPeer] = useState<Peer>(new Peer(opts.brokerId));
+    const [localPeer] = useState<Peer>(new Peer(opts.brokerId));
     const [brokerId, setBrokerId] = useState(opts.brokerId);
     const [error, setError] = useState<PeerError | undefined>(undefined);
     const [connections, setConnections] = useState<Peer.DataConnection[]>([]);

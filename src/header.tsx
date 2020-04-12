@@ -1,7 +1,7 @@
-import React, { FC, FormEventHandler, useCallback, useEffect, useState } from "react";
+import React, { FC, FormEventHandler, useCallback } from "react";
+import Clipboard from "react-clipboard.js";
 import "react-piano/dist/styles.css";
 import styled from "styled-components";
-import Clipboard from "react-clipboard.js";
 import { useMidi } from "./hooks";
 import { instrumentList } from "./instruments";
 
@@ -104,7 +104,7 @@ interface InstrumentSelectProps {
 const _InstrumentSelect: FC<InstrumentSelectProps> = ({ onInstrumentSelect, className, instrument }) => {
     const onInputChange = useCallback<FormEventHandler<HTMLSelectElement>>(
         (event) => onInstrumentSelect(event.currentTarget.value),
-        []
+        [onInstrumentSelect]
     );
     return (
         <div className={className}>

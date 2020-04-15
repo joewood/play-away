@@ -140,3 +140,24 @@ export function useActiveNotes(midiEvent: MidiEvent | null, localEvent: MidiEven
     }, [localCommand, localNote]);
     return activeNotes;
 }
+
+export function useMediaDevice(): [MediaStream | undefined, any] {
+    const [stream, setStream] = useState<MediaStream>();
+    const [error, setError] = useState<any>();
+    useEffect(() => {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            console.log("getUserMedia supported.");
+            navigator.mediaDevices
+                .getUserMedia({ audio: true, video: true })
+                .then(setStream)
+                .catch(function (err) {
+                    console.log("The following getUserMedia error occured: " + err);
+                    setError(err);
+                });
+        } else {
+            console.log("getUserMedia not supported on your browser!");
+            setError(null);
+        }
+    }, [setStream, setError]);
+    return [stream, error];
+}

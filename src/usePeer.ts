@@ -1,25 +1,35 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import Peer from "peerjs";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import Peer, { DataConnection, MediaConnection } from "peerjs";
 
 interface PeerError {
     type: string;
 }
 
-const useReceivePeerState = <TData extends {}>(
+interface UsePeer<TData extends {}> {
+    sendData: (data: TData) => void;
+    callPeer: (stream: MediaStream) => MediaConnection | null;
+    connections: DataConnection[];
+    localPeerId: string;
+    isReceiveConnected: boolean | undefined;
+}
+
+export const usePeer = <TData extends {}>(
     isReceiver?: boolean,
     peerBrokerId?: string,
     opts: { brokerId: string } = { brokerId: "" }
-): [TData | undefined, (data: TData) => void, Peer.DataConnection[], boolean, string | undefined, any] => {
+): [TData | undefined, MediaConnection | null, any, UsePeer<TData>] => {
     const [receiveData, setReceiveData] = useState<TData | undefined>(undefined);
+    const [mediaConnection, setMediaConnection] = useState<MediaConnection | null>(null);
     const [isReceiveConnected, setReceiveConnected] = useState(false);
     const [localPeer] = useState<Peer>(new Peer(opts.brokerId));
-    const [brokerId, setBrokerId] = useState(opts.brokerId);
+    const [localPeerId, setLocalPeerId] = useState(opts.brokerId);
     const [error, setError] = useState<PeerError | undefined>(undefined);
     const [connections, setConnections] = useState<Peer.DataConnection[]>([]);
     const stateRef = useRef<TData>();
     const doConnection = useCallback(
         (connection: Peer.DataConnection) => {
             console.log("Do Connection");
+            setConnections((prevState) => [...prevState, connection]);
             connection.on("open", () => {
                 console.log("Connected");
                 setReceiveConnected(true);
@@ -42,32 +52,29 @@ const useReceivePeerState = <TData extends {}>(
     useEffect(() => {
         console.log("register Open");
         localPeer.on("open", () => {
-            setBrokerId((brokerId) => (brokerId !== localPeer.id ? localPeer.id : brokerId));
+            setLocalPeerId((brokerId) => (brokerId !== localPeer.id ? localPeer.id : brokerId));
             console.log("OPEN", localPeer.id);
         });
-    }, [localPeer, setBrokerId]);
+    }, [localPeer, setLocalPeerId]);
     // Receive Mode
     useEffect(() => {
-        if (!isReceiver || !peerBrokerId || brokerId === "") return;
+        if (!isReceiver || !peerBrokerId || localPeerId === "") return;
         console.log(`${localPeer.id} connecting to ${peerBrokerId}`);
         const connection = localPeer.connect(peerBrokerId);
-        setConnections((prevState) => [...prevState, connection]);
         doConnection(connection);
-    }, [localPeer, isReceiver, brokerId, doConnection, peerBrokerId]);
+    }, [localPeer, isReceiver, localPeerId, doConnection, peerBrokerId]);
     // Server mode
     useEffect(() => {
         if (isReceiver || !!peerBrokerId) return;
         console.log("register connection");
-        localPeer.on("connection", (conn) => {
-            setConnections((prevState) => [...prevState, conn]);
-            doConnection(conn);
-        });
+        localPeer.on("connection", doConnection);
     }, [localPeer, isReceiver, peerBrokerId, doConnection]);
     // general events
     useEffect(() => {
         console.log("register error");
-
-        localPeer.on("error", (err) => setError(err));
+        // in response to these callbacks we just set the hook state which is then returned
+        localPeer.on("error", setError);
+        localPeer.on("call", setMediaConnection);
         return () => {
             console.log("DESTROY", localPeer.id);
             setReceiveConnected(false);
@@ -75,14 +82,24 @@ const useReceivePeerState = <TData extends {}>(
         };
     }, [localPeer]);
     // dispatch to all connected
-    const dispatch = useCallback(
+    const sendData = useCallback(
         (newState: TData) => {
             stateRef.current = newState;
             connections.forEach((conn) => conn.send(newState));
         },
         [connections, stateRef]
     );
-    return [receiveData, dispatch, connections, isReceiveConnected, brokerId, error];
+    const callPeer = useCallback(
+        (stream: MediaStream) => {
+            if (!!peerBrokerId && connections.length > 0)
+                return localPeer.call(peerBrokerId, stream, { metadata: connections[0].metadata });
+            else return null;
+        },
+        [connections, localPeer, peerBrokerId]
+    );
+    const usePeerReturn = useMemo<UsePeer<TData>>(
+        () => ({ sendData, connections, isReceiveConnected, callPeer, localPeerId }),
+        [sendData, connections, isReceiveConnected, callPeer, localPeerId]
+    );
+    return [receiveData, mediaConnection, error, usePeerReturn];
 };
-
-export default useReceivePeerState;

@@ -4,12 +4,14 @@ import "react-piano/dist/styles.css";
 import styled from "styled-components";
 import { useMidi } from "./hooks";
 import { instrumentList } from "./instruments";
+import { MediaConnection } from "peerjs";
 
 interface HeaderProps extends MidiSelectProps, InstrumentSelectProps {
     name: string;
     className?: string;
     isReceiver: boolean;
     broker?: string;
+    callPeer: () => void;
 }
 
 const url = window.location.toString();
@@ -20,6 +22,7 @@ const _Header: FC<HeaderProps> = ({
     midiDevice,
     isReceiver,
     broker,
+    callPeer,
     instrument,
     onInstrumentSelect,
 }) => {
@@ -28,6 +31,11 @@ const _Header: FC<HeaderProps> = ({
         <header className={className}>
             <a href="/">/PlayAway</a>
             <div className="settings">
+                {!!callPeer && (
+                    <div className="call">
+                        <button onClick={callPeer}>Video Call</button>
+                    </div>
+                )}
                 {!isReceiver && (
                     <div className="join">
                         <a href={joinUrl} target="__blank">
@@ -84,6 +92,12 @@ export const Header = styled(_Header)`
             align-items: center;
             & > * {
                 margin-left: 4px;
+            }
+        }
+        & .call {
+            align-self: center;
+            > button {
+                padding: 5px;
             }
         }
         & button {

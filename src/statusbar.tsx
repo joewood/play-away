@@ -14,10 +14,10 @@ const _StatusBar: FC<{
     const webMidi = useMidi();
     return (
         <div className={className}>
-            <span>Web Midi Supported: {webMidi === undefined ? "Waiting" : webMidi === null ? "No" : "Enabled"}</span>
-            {!!error && <span style={{ color: "red" }}>Error: error.type</span>}
+            {webMidi === null && <span style={{ color: "red" }}>Web Midi Not Supported</span>}
+            {!!error && <span style={{ color: "red" }}>Error: {error.type}</span>}
+            <span>{connected ? `Connected` : `Not Connected`}</span>
             {!!session && <span>{`Session: ${session}`}</span>}
-            {connected !== undefined && <span>{`Connected: ${connected}`}</span>}
             <span>{`Connections: ${connections}`}</span>
         </div>
     );

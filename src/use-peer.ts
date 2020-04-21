@@ -122,9 +122,9 @@ export function usePeerConnections(opts: { brokerId: string } = { brokerId: "" }
 
     // Receive Mode
     const connectToPeer = useCallback(
-        (peerId: string) => {
+        (peerId: string, metadata: any | undefined, label?: string | undefined) => {
             if (!peerId || localPeer.disconnected) return;
-            const connection = localPeer.connect(peerId);
+            const connection = localPeer.connect(peerId, { label: label, metadata: metadata });
             setConnections((prevState) => [...prevState, connection]);
         },
         [localPeer, setConnections]
@@ -181,7 +181,10 @@ export function useConnection<TData extends {}>(connection: DataConnection | nul
     const [error, setError] = useState<any>();
     const [isOpen, setIsOpen] = useState(false);
 
-    const onOpen = useCallback(() => setIsOpen(true), [setIsOpen]);
+    const onOpen = useCallback(() => {
+        setIsOpen(true);
+        setError(undefined);
+    }, [setIsOpen, setError]);
     const unregisterConnection = useCallback(() => {
         if (!!connection) {
             connection.off("data", setData);

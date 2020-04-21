@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { Connection } from "./connection";
 import { Header } from "./header";
 import { useMediaDevice, useMidiInputs } from "./hooks";
-import { StatusBar } from "./midi-components";
+import { StatusBar } from "./statusbar";
 import { Settings, useSettings } from "./settings";
 import { usePeerConnections } from "./use-peer";
 import { Welcome } from "./welcome";
@@ -35,7 +35,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
     const [midiInputData] = useMidiInputs(settings.midiInputId);
     // Connectivity Block
     const {
-        isOpen,
+        isOpen: isConnected,
         callPeer,
         connections,
         localPeer,
@@ -50,8 +50,8 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
         if (!!midiInputData) sendData(midiInputData);
     }, [midiInputData, sendData]);
     const onJoin = useCallback(() => {
-        if (!!broker) connectToPeer(broker);
-    }, [connectToPeer, broker]);
+        if (!!broker) connectToPeer(broker, { name: settings.name || "anon" });
+    }, [connectToPeer, broker, settings.name]);
 
     return (
         <div className={className} ref={ref}>
@@ -74,7 +74,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                     onShowHelp={onShowHelp}
                     onJoin={onJoin}
                     isReceiver={isReceiver}
-                    isConnected={isOpen}
+                    isConnected={isConnected}
                     broker={isReceiver ? broker : localPeer?.id || ""}
                 />
                 {connections.map((connection, i) => (
@@ -101,15 +101,15 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                         onMidiEvent={sendData}
                         localStream={localStream}
                         callPeer={callPeer}
-                        isConnected={isOpen}
+                        isConnected={isConnected}
                         settings={settings}
                         width={width - 4}
                     />
                 </div>
                 <StatusBar
                     error={peerError}
-                    connected={isOpen}
-                    session={`${localPeer?.id}`}
+                    connected={isConnected}
+                    session={localPeer?.id}
                     connections={connections.length}
                 />
             </div>

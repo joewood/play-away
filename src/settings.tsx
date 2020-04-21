@@ -3,6 +3,7 @@ import useInput from "react-use-input";
 import styled from "styled-components";
 import { useMediaDevices, useMidi } from "./hooks";
 import { instrumentList } from "./instruments";
+import createPersistedState from "use-persisted-state";
 
 export interface SettingsType {
     audioId: string | undefined;
@@ -13,8 +14,10 @@ export interface SettingsType {
     name: string | undefined;
 }
 
+const useSettingsState = createPersistedState<SettingsType>("settings");
+
 export function useSettings() {
-    const [settings, onChange] = useState<SettingsType>({
+    const [settings, onChange] = useSettingsState({
         instrument: "acoustic_grand_piano",
         audioId: undefined,
         videoId: undefined,

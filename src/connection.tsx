@@ -68,12 +68,13 @@ const _Connection = memo<ConnectionProps>(
         callPeer,
         width,
         onMidiEvent,
-        isConnected,
+        isConnected: isLocalConnected,
         settings,
     }) => {
         const isLocal = connection === null;
         // returns the stream of Midi Events - no-ops if the connection is null (local)
         const [data, isOpen, error] = useConnection<MidiEvent>(connection);
+        const isConnected = connection ? isOpen : isLocalConnected;
         // returns the remote AV stream - no-ops if the connection is null
         const [answeredConnection, answerCall] = useAnswerRemote(callingConnection, localStream);
         const [localIsCallingConnection, makeCall] = useCallRemote(localStream, connection, callPeer);
@@ -107,20 +108,24 @@ const _Connection = memo<ConnectionProps>(
                     />
                 </div>
                 <div className="status">
-                    <span>{connection ? connection.peer : peer?.id}</span>
-                    <span>{connection ? connection.metadata?.name : "Me"}</span>
-                    {<span>{isConnected ? "Connected" : "Not Connected"}</span>}
-                    {!!peer && <span>{isOpen && !peer.disconnected ? "Signal Connected" : "Signal Disconnected"}</span>}
-                    {!!error && <span>{JSON.stringify(error)}</span>}
-                    {!!remoteStreamError && <span>Stream Error: {JSON.stringify(remoteStreamError)}</span>}
-                    {!!localIsCallingConnection && <span>{"Calling"}</span>}
-                    {!!answerCall && !!callingConnection && <button onClick={answerCall}>Answer Call</button>}
-                    {!!connection && (
-                        <button onClick={makeCall}>
-                            Make Call
-                            <FaPhone />
-                        </button>
-                    )}
+                    <div className="meta">
+                        <div>{isConnected ? "Connected" : "Not Connected"}</div>
+                        {!!error && <div>{JSON.stringify(error)}</div>}
+                        <div>
+                            {connection ? `${connection.metadata?.name || "Anon"} (${connection.peer})` : settings.name}
+                        </div>
+                        {!!remoteStreamError && <div>Stream Error: {JSON.stringify(remoteStreamError)}</div>}
+                    </div>
+                    {!!localIsCallingConnection && <div>Calling</div>}
+                    <div className="commands">
+                        {!!answerCall && !!callingConnection && <button onClick={answerCall}>Answer Call</button>}
+                        {!!connection && (
+                            <button onClick={makeCall}>
+                                Make Call
+                                <FaPhone />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         );
@@ -151,8 +156,16 @@ export const Connection = styled(_Connection)`
         grid-column: 1/3;
         display: flex;
         justify-content: space-around;
-        background-color: #aaa;
+        background-color: #eee;
         align-items: center;
+        margin-top: 2px;
+        > .meta {
+            flex: 1 1 auto;
+            > * {
+                padding-right: 10px;
+                display: inline-block;
+            }
+        }
     }
     & button {
         padding-left: 0.5rem;

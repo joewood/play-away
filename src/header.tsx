@@ -47,12 +47,10 @@ const _Header: FC<HeaderProps> = ({
             <a className="logo" href="/">
                 /PlayAway
             </a>
-            {isReceiver && broker && (
+            {isReceiver && broker && isConnected && (
                 <div className="join">
                     <span>{broker}</span>
-                    <button disabled={!isConnected} onClick={onJoin}>
-                        Join
-                    </button>
+                    <button onClick={onJoin}>Join</button>
                 </div>
             )}
             {!isReceiver && broker && (

@@ -1,7 +1,7 @@
 import Peer, { DataConnection, MediaConnection } from "peerjs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-interface PeerError {
+export interface PeerError {
     type: string;
 }
 
@@ -30,6 +30,10 @@ interface UsePeer<TData extends {}> {
     isReceiveConnected: boolean | undefined;
 }
 
+/** Connect useing PeerJS and return the active data connection
+ * @param opts - use a broker override to force use of a specific peer id
+ * @returns Connected state, Peer object, Data Connection, MediaConnect and error
+ */
 function usePeerConnection(
     opts: { brokerId: string } = { brokerId: "" }
 ): [boolean, Peer, DataConnection | undefined, MediaConnection | undefined, PeerError | undefined] {
@@ -37,7 +41,7 @@ function usePeerConnection(
     const [localPeer, setLocalPeer] = useState<Peer>(new Peer(opts.brokerId));
     const [localPeerId, setLocalPeerId] = useState(opts.brokerId);
     const [error, setLocalPeerError] = useState<PeerError>();
-    const [remoteMediaConnection, setRemoteMediaConnection] = useState<MediaConnection>();
+    const [remoteCallingMediaConnection, setRemoteCallingMediaConnection] = useState<MediaConnection>();
     const [connection, setConnection] = useState<DataConnection>();
     const [reconnect, setReconnect] = useState(0);
     // const [connections, setConnections] = useState<Peer.DataConnection[]>([]);
@@ -52,6 +56,7 @@ function usePeerConnection(
         setLocalPeerId((brokerId) => (brokerId !== localPeer.id ? localPeer.id : brokerId));
         setReconnect(0);
         setIsOpen(true);
+        setLocalPeerError(undefined);
         console.log("OPEN", localPeer.id);
     }, [localPeer, setLocalPeerId]);
 
@@ -71,6 +76,8 @@ function usePeerConnection(
             console.log("Error " + err.type);
             if (FATAL_ERRORS.includes(err.type)) {
                 setReconnect(5);
+                setLocalPeerError(err);
+                setIsOpen(false);
             } else {
                 setLocalPeerError(err);
             }
@@ -83,7 +90,7 @@ function usePeerConnection(
         localPeer.off("disconnected", onReconnectPeer);
         localPeer.off("open", onOpenPeer);
         localPeer.off("error", onError);
-        localPeer.off("call", setRemoteMediaConnection);
+        localPeer.off("call", setRemoteCallingMediaConnection);
         localPeer.off("close", onDestroyPeer);
         localPeer.off("connection", setConnection);
         setIsOpen(false);
@@ -95,17 +102,18 @@ function usePeerConnection(
         localPeer.on("disconnected", onReconnectPeer);
         localPeer.on("open", onOpenPeer);
         localPeer.on("error", onError);
-        localPeer.on("call", setRemoteMediaConnection);
+        localPeer.on("call", setRemoteCallingMediaConnection);
         localPeer.on("close", onDestroyPeer);
         localPeer.on("connection", setConnection);
         return onDestroyPeer;
     }, [localPeer, onOpenPeer, onDestroyPeer, onError, onReconnectPeer]);
-    return [isOpen, localPeer, connection, remoteMediaConnection, error];
+    return [isOpen, localPeer, connection, remoteCallingMediaConnection, error];
 }
 
-export function usePeerConnection2(opts: { brokerId: string } = { brokerId: "" }) {
+/** Create PeerJS connection and track connections */
+export function usePeerConnections(opts: { brokerId: string } = { brokerId: "" }) {
     const [connections, setConnections] = useState<Peer.DataConnection[]>([]);
-    const [isOpen, localPeer, connection, remoteMediaConnection, error] = usePeerConnection(opts);
+    const [isOpen, localPeer, connection, remoteCallingMediaConnection, peerError] = usePeerConnection(opts);
     // Track inbound connectionsServer mode - when a connection arrives register it
     useEffect(() => {
         if (!connection) return;
@@ -144,10 +152,10 @@ export function usePeerConnection2(opts: { brokerId: string } = { brokerId: "" }
     const usePeerReturn = useMemo(
         () => ({
             connections,
-            remoteMediaConnection,
+            remoteCallingMediaConnection,
             sendData,
             isOpen,
-            error,
+            peerError,
             connectToPeer,
             callPeer,
             removeConnection,
@@ -157,8 +165,8 @@ export function usePeerConnection2(opts: { brokerId: string } = { brokerId: "" }
             connections,
             callPeer,
             sendData,
-            remoteMediaConnection,
-            error,
+            remoteCallingMediaConnection,
+            peerError,
             isOpen,
             connectToPeer,
             removeConnection,
@@ -191,99 +199,3 @@ export function useConnection<TData extends {}>(connection: DataConnection | nul
 
     return [data, isOpen, error];
 }
-
-// export const usePeer = <TData extends {}>(
-//     isReceiver?: boolean,
-//     peerBrokerId?: string,
-//     opts: { brokerId: string } = { brokerId: "" }
-// ): [TData | undefined, MediaConnection | null, any, UsePeer<TData>] => {
-//     const [receiveData, setReceiveData] = useState<TData | undefined>(undefined);
-//     const [remoteMediaConnection, setRemoteMediaConnection] = useState<MediaConnection | null>(null);
-//     const [isReceiveConnected, setReceiveConnected] = useState(false);
-//     const [localPeer] = useState<Peer>(new Peer(opts.brokerId));
-//     const [localPeerId, setLocalPeerId] = useState(opts.brokerId);
-//     const [error, setLocalPeerError] = useState<PeerError | undefined>(undefined);
-//     const [connections, setConnections] = useState<Peer.DataConnection[]>([]);
-//     const stateRef = useRef<TData>();
-
-//     // initialize to get an ID
-//     useEffect(() => {
-//         console.log("register Open");
-//         localPeer.on("open", () => {
-//             setLocalPeerId((brokerId) => (brokerId !== localPeer.id ? localPeer.id : brokerId));
-//             console.log("OPEN", localPeer.id);
-//         });
-//     }, [localPeer, setLocalPeerId]);
-//     // general events
-//     useEffect(() => {
-//         // in response to these callbacks we just set the hook state which is then returned
-//         localPeer.on("error", setLocalPeerError);
-//         localPeer.on("call", setRemoteMediaConnection);
-//         return () => {
-//             console.log("DESTROY", localPeer.id);
-//             localPeer.off("error", setLocalPeerError);
-//             localPeer.off("call", setRemoteMediaConnection);
-//             setReceiveConnected(false);
-//             localPeer && localPeer.destroy();
-//         };
-//     }, [localPeer]);
-
-//     // register a connection - set it up to listen to data
-//     const registerConnection = useCallback(
-//         (connection: Peer.DataConnection) => {
-//             console.log("Register Connection");
-//             setConnections((prevState) => [...prevState, connection]);
-//             connection.on("open", () => {
-//                 console.log("Connected");
-//                 setReceiveConnected(true);
-//                 connection.on("data", (receivedData: TData) => {
-//                     // We want isConnected and data to be set at the same time.
-//                     console.log("Data", receivedData);
-//                     setReceiveConnected(true);
-//                     setReceiveData(receivedData);
-//                 });
-//             });
-//             connection.on("close", () => {
-//                 console.log("Connection closed");
-//                 setConnections((prevState) => prevState.filter((conn) => conn !== connection));
-//                 setReceiveConnected(false);
-//             });
-//             connection.on("error", (err) => setLocalPeerError(err));
-//         },
-//         [setReceiveData, setLocalPeerError, setReceiveConnected]
-//     );
-//     // Receive Mode
-//     useEffect(() => {
-//         if (!isReceiver || !peerBrokerId || localPeerId === "") return;
-//         console.log(`${localPeer.id} connecting to ${peerBrokerId}`);
-//         const connection = localPeer.connect(peerBrokerId);
-//         registerConnection(connection);
-//     }, [localPeer, isReceiver, localPeerId, registerConnection, peerBrokerId]);
-//     // Server mode - when a connection arrives register it
-//     useEffect(() => {
-//         if (isReceiver || !!peerBrokerId) return;
-//         console.log("register connection");
-//         localPeer.on("connection", registerConnection);
-//     }, [localPeer, isReceiver, peerBrokerId, registerConnection]);
-//     // dispatch to all connected
-//     const sendData = useCallback(
-//         (newState: TData) => {
-//             stateRef.current = newState;
-//             connections.forEach((conn) => conn.send(newState));
-//         },
-//         [connections, stateRef]
-//     );
-//     const callPeer = useCallback(
-//         (localStream: MediaStream) => {
-//             if (!!peerBrokerId && connections.length > 0)
-//                 return localPeer.call(peerBrokerId, localStream, { metadata: connections[0].metadata });
-//             else return null;
-//         },
-//         [connections, localPeer, peerBrokerId]
-//     );
-//     const usePeerReturn = useMemo<UsePeer<TData>>(
-//         () => ({ sendData, connections, isReceiveConnected, callPeer, localPeerId }),
-//         [sendData, connections, isReceiveConnected, callPeer, localPeerId]
-//     );
-//     return [receiveData, remoteMediaConnection, error, usePeerReturn];
-// };

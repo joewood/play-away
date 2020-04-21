@@ -16,6 +16,7 @@ interface HeaderProps {
     broker?: string;
     cameraOn: boolean;
     microphoneOn: boolean;
+    isConnected: boolean;
     onJoin: () => void;
     onShowHelp: () => void;
     onCameraOn: (on: boolean) => void;
@@ -32,6 +33,7 @@ const _Header: FC<HeaderProps> = ({
     cameraOn,
     onJoin,
     microphoneOn,
+    isConnected,
     onCameraOn,
     onMicrophoneOn,
     onShowSettings,
@@ -48,7 +50,9 @@ const _Header: FC<HeaderProps> = ({
             {isReceiver && broker && (
                 <div className="join">
                     <span>{broker}</span>
-                    <button onClick={onJoin}>Join</button>
+                    <button disabled={!isConnected} onClick={onJoin}>
+                        Join
+                    </button>
                 </div>
             )}
             {!isReceiver && broker && (

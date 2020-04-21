@@ -6,7 +6,7 @@ import { Header } from "./header";
 import { useMediaDevice, useMidiInputs } from "./hooks";
 import { StatusBar } from "./midi-components";
 import { Settings, useSettings } from "./settings";
-import { usePeerConnection2 } from "./use-peer";
+import { usePeerConnections } from "./use-peer";
 import { Welcome } from "./welcome";
 
 interface RoomProps {
@@ -34,26 +34,25 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
     const [localStream] = useMediaDevice(mediaConstraints);
     const [midiInputData] = useMidiInputs(settings.midiInputId);
     // Connectivity Block
-    const { callPeer, connections, localPeer, error, sendData, connectToPeer, ...peerData } = usePeerConnection2({
+    const {
+        isOpen,
+        callPeer,
+        connections,
+        localPeer,
+        peerError,
+        sendData,
+        connectToPeer,
+        ...peerData
+    } = usePeerConnections({
         brokerId: override,
     });
-    const onJoin = useCallback(() => {
-        if (!!broker) connectToPeer(broker);
-    }, [connectToPeer, broker]);
-    // const [
-    //     receiveData,
-    //     remoteIsCallingConnection,
-    //     error,
-    //     { sendData, callPeer, connections, isReceiveConnected, localPeerId },
-    // ] = usePeer<MidiEvent>(isReceiver, broker, { brokerId: override });
-
-    // const [pianoData, setPianoData] = useState<MidiEvent | null>(null);
-    // const [instrument, setInstrument] = useState();
-
-    // const connectionNanes = useMemo(() => connections.map((c) => c.label), [connections]);
     useEffect(() => {
         if (!!midiInputData) sendData(midiInputData);
     }, [midiInputData, sendData]);
+    const onJoin = useCallback(() => {
+        if (!!broker) connectToPeer(broker);
+    }, [connectToPeer, broker]);
+
     return (
         <div className={className} ref={ref}>
             <div className="modal" style={{ visibility: showHelp ? "visible" : "collapse" }}>
@@ -75,6 +74,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                     onShowHelp={onShowHelp}
                     onJoin={onJoin}
                     isReceiver={isReceiver}
+                    isConnected={isOpen}
                     broker={isReceiver ? broker : localPeer?.id || ""}
                 />
                 {connections.map((connection, i) => (
@@ -83,10 +83,11 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                             key={i}
                             peer={null}
                             connection={connection}
-                            callingConnection={peerData.remoteMediaConnection}
+                            callingConnection={peerData.remoteCallingMediaConnection}
                             localStream={localStream}
                             callPeer={callPeer}
                             settings={settings}
+                            isConnected={connection.open}
                             width={width - 20}
                         />
                     </div>
@@ -100,11 +101,17 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                         onMidiEvent={sendData}
                         localStream={localStream}
                         callPeer={callPeer}
+                        isConnected={isOpen}
                         settings={settings}
                         width={width - 4}
                     />
                 </div>
-                <StatusBar error={error} session={`${localPeer?.id}`} connections={connections.length} />
+                <StatusBar
+                    error={peerError}
+                    connected={isOpen}
+                    session={`${localPeer?.id}`}
+                    connections={connections.length}
+                />
             </div>
         </div>
     );

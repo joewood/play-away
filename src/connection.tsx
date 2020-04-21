@@ -54,11 +54,23 @@ interface ConnectionProps {
     callPeer: (connection: DataConnection | null, localStream: MediaStream | undefined) => MediaConnection | undefined;
     className?: string;
     width: number;
+    isConnected: boolean;
     settings: SettingsType;
 }
 
 const _Connection = memo<ConnectionProps>(
-    ({ className, peer, connection, localStream, callingConnection, callPeer, width, onMidiEvent, settings }) => {
+    ({
+        className,
+        peer,
+        connection,
+        localStream,
+        callingConnection,
+        callPeer,
+        width,
+        onMidiEvent,
+        isConnected,
+        settings,
+    }) => {
         const isLocal = connection === null;
         // returns the stream of Midi Events - no-ops if the connection is null (local)
         const [data, isOpen, error] = useConnection<MidiEvent>(connection);
@@ -90,14 +102,14 @@ const _Connection = memo<ConnectionProps>(
                         width={answeredConnection ? width - 150 - 4 : width}
                         instrumentName={settings.instrument}
                         local={!connection}
-                        connected={!connection || connection.open}
+                        connected={isConnected}
                         {...pianoProps}
                     />
                 </div>
                 <div className="status">
                     <span>{connection ? connection.peer : peer?.id}</span>
                     <span>{connection ? connection.metadata?.name : "Me"}</span>
-                    {!!connection && <span>{connection.open ? "Connection Open" : "Connection Closed"}</span>}
+                    {<span>{isConnected ? "Connected" : "Not Connected"}</span>}
                     {!!peer && <span>{isOpen && !peer.disconnected ? "Signal Connected" : "Signal Disconnected"}</span>}
                     {!!error && <span>{JSON.stringify(error)}</span>}
                     {!!remoteStreamError && <span>Stream Error: {JSON.stringify(remoteStreamError)}</span>}

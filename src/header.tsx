@@ -1,190 +1,115 @@
-import React, { FC, FormEventHandler, useCallback } from "react";
+import React, { FC, useCallback } from "react";
 import Clipboard from "react-clipboard.js";
-import "react-piano/dist/styles.css";
+import { FaCamera, FaPhone } from "react-icons/fa";
+import { FiCameraOff, FiMic, FiMicOff, FiSettings, FiHelpCircle } from "react-icons/fi";
 import styled from "styled-components";
-import { useMidi } from "./hooks";
-import { instrumentList } from "./instruments";
-import { MediaConnection } from "peerjs";
 
-interface HeaderProps extends MidiSelectProps, InstrumentSelectProps {
+export interface CallOptions {
+    audio: MediaDeviceInfo | undefined;
+    video: MediaDeviceInfo | undefined;
+}
+
+interface HeaderProps {
     name: string;
     className?: string;
     isReceiver: boolean;
     broker?: string;
-    callPeer: () => void;
+    cameraOn: boolean;
+    microphoneOn: boolean;
+    onJoin: () => void;
+    onShowHelp: () => void;
+    onCameraOn: (on: boolean) => void;
+    onMicrophoneOn: (on: boolean) => void;
+    onShowSettings: () => void;
 }
 
 const url = window.location.toString();
 
 const _Header: FC<HeaderProps> = ({
     className,
-    onInputSelect,
-    midiDevice,
     isReceiver,
     broker,
-    callPeer,
-    instrument,
-    onInstrumentSelect,
+    cameraOn,
+    onJoin,
+    microphoneOn,
+    onCameraOn,
+    onMicrophoneOn,
+    onShowSettings,
+    onShowHelp,
 }) => {
     const joinUrl = `${url}?broker=${broker}`;
+    const onClickCameraOn = useCallback((x: any) => onCameraOn(!cameraOn), [onCameraOn, cameraOn]);
+    const onClickMicrophoneOn = useCallback((x: any) => onMicrophoneOn(!microphoneOn), [onMicrophoneOn, microphoneOn]);
     return (
         <header className={className}>
-            <a href="/">/PlayAway</a>
-            <div className="settings">
-                {!!callPeer && (
-                    <div className="call">
-                        <button onClick={callPeer}>Video Call</button>
-                    </div>
-                )}
-                {!isReceiver && (
-                    <div className="join">
-                        <a href={joinUrl} target="__blank">
-                            {joinUrl}
-                        </a>
-                        <Clipboard data-clipboard-text={joinUrl} button-href="#">
-                            Copy Link
-                        </Clipboard>
-                    </div>
-                )}
-                <InstrumentSelect instrument={instrument} onInstrumentSelect={onInstrumentSelect} />
-                <MidiSelect midiDevice={midiDevice} onInputSelect={onInputSelect} />
-            </div>
+            <a className="logo" href="/">
+                /PlayAway
+            </a>
+            {isReceiver && broker && (
+                <div className="join">
+                    <span>{broker}</span>
+                    <button onClick={onJoin}>Join</button>
+                </div>
+            )}
+            {!isReceiver && broker && (
+                <div className="join">
+                    <a href={joinUrl} target="__blank">
+                        {joinUrl}
+                    </a>
+                    <Clipboard data-clipboard-text={joinUrl} button-href="#">
+                        Copy
+                    </Clipboard>
+                </div>
+            )}
+            <button onClick={onClickMicrophoneOn}>{microphoneOn ? <FiMic /> : <FiMicOff />}</button>
+            <button onClick={onClickCameraOn}>{cameraOn ? <FaCamera /> : <FiCameraOff />}</button>
+            <button onClick={onShowSettings}>{<FiSettings />}</button>
+            <button onClick={onShowHelp}>{<FiHelpCircle />}</button>
         </header>
     );
 };
 export const Header = styled(_Header)`
     background-color: #282c34;
-    flex: 0 0 calc(40px + 2vmin);
-    display: flex;
-    outline-style: solid;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    font-size: calc(10px + 2vmin);
+    height: 3rem;
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto;
+    column-gap: 1rem;
+    font-size: 2rem;
     color: white;
-
+    place-items: center end;
+    padding-left: 2px;
+    padding-right: 2px;
+    width: 100%;
     & > a {
+        justify-self: start;
         text-shadow: 1px 0 5px rgba(192, 192, 255, 1);
-        font-size: 20px;
-        padding: 10px;
+        font-size: 2rem;
+        padding: 0.25rem;
     }
-    & > div:nth-child(2) {
-        padding: 2px;
-        > span:first-child {
-            font-weight: bold;
+    & .join {
+        font-size: 0.75rem;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0.25rem;
+        > a {
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
         }
-        > span:nth-child(2) {
-            font-style: italic;
-        }
-    }
-    & .settings {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        flex: 0 0 auto;
-        font-size: 12px;
-        > div {
-            margin-left: 8px;
-        }
-        > .join {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            & > * {
-                margin-left: 4px;
-            }
-        }
-        & .call {
-            align-self: center;
-            > button {
-                padding: 5px;
-            }
-        }
-        & button {
-            padding: 1px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border: rgba(255, 255, 255, 0.2);
-            color: white;
+        > button {
+            font-size: 0.75rem;
         }
     }
-`;
-
-interface InstrumentSelectProps {
-    onInstrumentSelect: (instrument: string) => void;
-    instrument: string;
-    className?: string;
-}
-
-const _InstrumentSelect: FC<InstrumentSelectProps> = ({ onInstrumentSelect, className, instrument }) => {
-    const onInputChange = useCallback<FormEventHandler<HTMLSelectElement>>(
-        (event) => onInstrumentSelect(event.currentTarget.value),
-        [onInstrumentSelect]
-    );
-    return (
-        <div className={className}>
-            <div>Instrument</div>
-            <select onChange={onInputChange} value={instrument}>
-                {instrumentList.map((v, i) => (
-                    <option key={i} value={v}>
-                        {v}
-                    </option>
-                ))}
-            </select>
-        </div>
-    );
-};
-const InstrumentSelect = styled(_InstrumentSelect)`
-    padding-right: 10px;
-`;
-
-interface MidiSelectProps {
-    onInputSelect?: (input: WebMidi.MIDIInput) => void;
-    className?: string;
-    midiDevice: WebMidi.MIDIInput | undefined;
-    // onOutputSelect?: (outputs: WebMidi.MIDIOutput[]) => void;
-}
-
-const _MidiSelect: FC<MidiSelectProps> = ({ midiDevice, onInputSelect, className }) => {
-    const webMidi = useMidi();
-    // const [input, setInput] = useState<WebMidi.MIDIInput>([]);
-    const onInputChange = useCallback<FormEventHandler<HTMLSelectElement>>(
-        (event) => {
-            if (!webMidi || !onInputSelect) return;
-            const device = webMidi.inputs.find((device) => device.id === event.currentTarget.value);
-            if (!!device) onInputSelect(device);
-        },
-        [onInputSelect, webMidi]
-    );
-    // useEffect(() => {
-    //     if (!!onInputSelect) onInputSelect(input);
-    // }, [input, onInputSelect]);
-    // const [output, setOutput] = useState<WebMidi.MIDIOutput[]>([]);
-    // const onOutputChange = useCallback<FormEventHandler<HTMLSelectElement>>(
-    //     (event) => {
-    //         if (!webMidi) return;
-    //         const opts = Array.from(event.currentTarget.selectedOptions).map((v) => v.value);
-    //         setOutput(webMidi.outputs.filter((i) => opts.includes(i.id)));
-    //     },
-    //     [webMidi]
-    // );
-    // useEffect(() => {
-    //     if (!!onOutputSelect) onOutputSelect(output);
-    // }, [output, onOutputSelect]);
-    if (!webMidi) return <div className={className}></div>;
-    return (
-        <div className={className}>
-            <div>Midi Input</div>
-            <select onChange={onInputChange} value={midiDevice && midiDevice.id}>
-                {webMidi &&
-                    webMidi.inputs.map((v, i) => (
-                        <option key={i} value={v.id}>
-                            {v.name}
-                        </option>
-                    ))}
-            </select>
-        </div>
-    );
-};
-const MidiSelect = styled(_MidiSelect)`
-    padding-right: 10px;
+    > * {
+        grid-row: 1/2;
+    }
+    & button {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+        font-size: 1.5rem;
+        background-color: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 0px;
+        color: white;
+    }
 `;

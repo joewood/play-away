@@ -63,19 +63,21 @@ export function getBinary({ command, note, velocity }: MidiEvent): Uint8Array {
 }
 
 /** Midi Input Hook, returns the stream of data from midi devices set using the setInputs function */
-export function useMidiInputs() {
+export function useMidiInputs(midiId: string | undefined) {
     const [midiInput, setInput] = useState<WebMidi.MIDIInput>();
+    const webMidi = useMidi();
     const [data, setData] = useState<MidiEvent | null>(null);
     const onData = useCallback(
-        (msg: WebMidi.MIDIMessageEvent) => {
-            const data = msg.data;
-            console.log("data", data);
+        (evt: WebMidi.MIDIMessageEvent) => {
+            const data = evt.data;
+            console.log("Midi Data", data);
             if (data.length === 3) {
                 setData(getEventData(data));
             }
         },
         [setData]
     );
+    useEffect(() => setInput(webMidi?.inputs.find((i) => i.id === midiId)), [midiId, webMidi]);
     useEffect(() => {
         if (!midiInput) return;
         midiInput.open().then((x) => {
@@ -83,8 +85,9 @@ export function useMidiInputs() {
             console.log("--Connected Up", midiInput.connection);
             midiInput.addEventListener("midimessage", onData);
         });
+        return () => midiInput && midiInput.removeEventListener("midimessage", onData as EventListener);
     }, [onData, midiInput]);
-    return [data, midiInput, setInput] as [MidiEvent | null, WebMidi.MIDIInput | undefined, typeof setInput];
+    return [data, midiInput] as [MidiEvent | null, WebMidi.MIDIInput | undefined];
 }
 
 export function useMidiOutputs() {
@@ -141,23 +144,58 @@ export function useActiveNotes(midiEvent: MidiEvent | null, localEvent: MidiEven
     return activeNotes;
 }
 
-export function useMediaDevice(): [MediaStream | undefined, any] {
+export function useMediaDevices(): MediaDeviceInfo[] {
+    const [devices, setDevices] = useState<MediaDeviceInfo[]>();
+    const onDeviceChange = useCallback(async () => {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            setDevices(devices);
+        } catch (err) {
+            console.error(err);
+            setDevices([]);
+        }
+    }, [setDevices]);
+    useEffect(() => {
+        if (devices === undefined) onDeviceChange();
+    }, [devices, onDeviceChange]);
+    useEffect(() => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error("getUserMedia not supported on your browser!");
+            return;
+        }
+        navigator.mediaDevices.addEventListener("devicechange", onDeviceChange);
+        return () => navigator.mediaDevices.removeEventListener("devicechange", onDeviceChange);
+    }, [onDeviceChange]);
+    return devices || [];
+}
+
+/** Returns the best suited Media Device based on the constraints */
+export function useMediaDevice(constraints: MediaStreamConstraints): [MediaStream | undefined, any] {
     const [stream, setStream] = useState<MediaStream>();
     const [error, setError] = useState<any>();
     useEffect(() => {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            console.log("getUserMedia supported.");
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.log("getUserMedia not supported on your browser!");
+            setError(null);
+            return;
+        }
+        if (!!constraints.audio || !!constraints.video) {
+            console.log("Media Constraints");
             navigator.mediaDevices
-                .getUserMedia({ audio: true, video: true })
+                .getUserMedia(constraints)
                 .then(setStream)
-                .catch(function (err) {
+                .catch((err) => {
                     console.log("The following getUserMedia error occured: " + err);
                     setError(err);
                 });
         } else {
-            console.log("getUserMedia not supported on your browser!");
-            setError(null);
+            setStream(undefined);
         }
-    }, [setStream, setError]);
+    }, [setStream, constraints, setError]);
+    useEffect(() => {
+        return () => {
+            if (!!stream) stream.getTracks().forEach((t) => t.stop());
+        };
+    }, [stream]);
     return [stream, error];
 }

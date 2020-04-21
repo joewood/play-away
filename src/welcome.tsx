@@ -6,7 +6,7 @@ const url = `${window.location.toString()}`;
 export const Welcome: FC<{ broker: string }> = ({ broker }) => {
     const joinUrl = `${url}?broker=${broker}`;
     return (
-        <>
+        <div>
             <h1>PlayAway</h1>
             <p>
                 This simple page is a peer to peer open-source music playing page to help support efforts of social
@@ -75,6 +75,6 @@ export const Welcome: FC<{ broker: string }> = ({ broker }) => {
                     Github/joewood/play-away
                 </a>
             </p>
-        </>
+        </div>
     );
 };

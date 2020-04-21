@@ -1,10 +1,13 @@
-import React, { memo, useCallback, useEffect, useMemo, useState, useRef } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import useDimensions from "react-use-dimensions";
 import styled from "styled-components";
+import { Connection } from "./connection";
 import { Header } from "./header";
-import { MidiEvent, useActiveNotes, useMidiInputs, useMediaDevice } from "./hooks";
-import { PianoInput, StatusBar } from "./midi-components";
-import { usePeer } from "./usePeer";
+import { useMediaDevice, useMidiInputs, MidiEvent } from "./hooks";
+import { StatusBar } from "./midi-components";
+import { usePiano } from "./piano";
+import { Settings, useSettings } from "./settings";
+import { usePeerConnection2 } from "./use-peer";
 import { Welcome } from "./welcome";
 
 interface RoomProps {
@@ -15,112 +18,93 @@ interface RoomProps {
 }
 
 const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => {
+    // Initialize Block
     const [ref, { width }] = useDimensions();
-    const [stream, mediaError] = useMediaDevice();
-    const [
-        receiveData,
-        mediaStream,
-        error,
-        { sendData, callPeer, connections, isReceiveConnected, localPeerId },
-    ] = usePeer<MidiEvent>(isReceiver, broker, { brokerId: override });
-    const [pianoData, setPianoData] = useState<MidiEvent | null>(null);
-    const [instrument, setInstrument] = useState("acoustic_grand_piano");
-    const [midiInputData, midiInput, setMidiInput] = useMidiInputs();
-    const remoteVid = useRef<HTMLVideoElement | null>(null);
-    const localVid = useRef<HTMLVideoElement | null>(null);
-    useEffect(() => {
-        if (!!mediaStream && !!remoteVid && !!remoteVid.current) {
-            mediaStream.answer(stream);
-            mediaStream.on("stream", (stream) => {
-                if (remoteVid.current) {
-                    remoteVid.current.autoplay = true;
-                    remoteVid.current.srcObject = stream;
-                }
-            });
-        }
-    }, [mediaStream, stream, remoteVid]);
-    useEffect(() => {
-        if (!!stream && localVid.current) {
-            console.log("Connecting ", stream);
-            localVid.current.autoplay = true;
-            localVid.current.srcObject = stream;
-        }
-    }, [stream, localVid]);
-    const onPianoInput = useCallback(
-        (event: MidiEvent) => {
-            console.log("Pisno Inpuy", event);
-            sendData(event);
-            setPianoData(event);
-        },
-        [sendData, setPianoData]
+    const [cameraOn, setCameraOn] = useState(false);
+    const [microphoneOn, setMicrophoneOn] = useState(false);
+    const { showSettings, onShowSettings, settings, ...settingsProps } = useSettings();
+    const [showHelp, setShowHelp] = useState(false);
+    const onShowHelp = useCallback(() => setShowHelp((prev) => !prev), [setShowHelp]);
+    const mediaConstraints = useMemo<MediaStreamConstraints>(
+        () => ({
+            audio: microphoneOn ? { deviceId: settings?.audioId } : undefined,
+            video: cameraOn ? { deviceId: settings?.videoId } : undefined,
+        }),
+        [cameraOn, microphoneOn, settings]
     );
-    const connectionNanes = useMemo(() => connections.map((c) => c.label), [connections]);
+    const [localStream, mediaError] = useMediaDevice(mediaConstraints);
+    const [midiInputData] = useMidiInputs(settings.midiInputId);
+    // Connectivity Block
+    const { callPeer, connections, localPeer, error, sendData, connectToPeer, ...peerData } = usePeerConnection2({
+        brokerId: override,
+    });
+    const onJoin = useCallback(() => {
+        if (!!broker) connectToPeer(broker);
+    }, [connectToPeer, broker]);
+    // const [
+    //     receiveData,
+    //     remoteIsCallingConnection,
+    //     error,
+    //     { sendData, callPeer, connections, isReceiveConnected, localPeerId },
+    // ] = usePeer<MidiEvent>(isReceiver, broker, { brokerId: override });
+
+    // const [pianoData, setPianoData] = useState<MidiEvent | null>(null);
+    // const [instrument, setInstrument] = useState();
+
+    // const connectionNanes = useMemo(() => connections.map((c) => c.label), [connections]);
     useEffect(() => {
         if (!!midiInputData) sendData(midiInputData);
     }, [midiInputData, sendData]);
-    const onCallPeer = useCallback(() => {
-        if (callPeer && stream) {
-            console.log("calling peer", stream);
-            const med = callPeer(stream);
-            console.log("calling peer", med);
-            med?.on("close", () => console.log("Close"));
-            med?.on("error", (err) => console.error(err));
-            med?.on("stream", (stream) => {
-                const rstream = (med as any)["remoteStream"];
-                console.log("Remote", rstream);
-                if (remoteVid.current && stream) {
-                    console.log("calling peer", stream);
-
-                    remoteVid.current.autoplay = true;
-                    remoteVid.current.srcObject = stream;
-                }
-            });
-        }
-    }, [stream, callPeer]);
-    const midiActiveNotes = useActiveNotes(midiInputData, pianoData);
-    const remoteActiveNotes = useActiveNotes(receiveData || null, null);
     return (
         <div className={className} ref={ref}>
-            <div
-                className="modal"
-                style={{ visibility: isReceiveConnected || connections.length > 0 ? "collapse" : "visible" }}
-            >
-                <Welcome broker={localPeerId || ""} />
+            <div className="modal" style={{ visibility: showHelp ? "visible" : "collapse" }}>
+                <div>
+                    <Welcome broker={localPeer?.id || "??"} />
+                </div>
+            </div>
+            <div className="modal" style={{ visibility: showSettings ? "visible" : "collapse" }}>
+                <div>{showSettings && <Settings settings={settings} {...settingsProps} />}</div>
             </div>
             <div className="main">
                 <Header
-                    name={localPeerId || ""}
-                    midiDevice={midiInput}
-                    instrument={instrument}
-                    onInputSelect={setMidiInput}
-                    onInstrumentSelect={setInstrument}
+                    name={localPeer?.id || ""}
+                    cameraOn={cameraOn}
+                    onCameraOn={setCameraOn}
+                    microphoneOn={microphoneOn}
+                    onMicrophoneOn={setMicrophoneOn}
+                    onShowSettings={onShowSettings}
+                    onShowHelp={onShowHelp}
+                    onJoin={onJoin}
                     isReceiver={isReceiver}
-                    callPeer={onCallPeer}
-                    broker={localPeerId || ""}
+                    broker={isReceiver ? broker : localPeer?.id || ""}
                 />
-                <div style={{ flex: "0 0 auto", pointerEvents: "none", marginLeft: 50, marginRight: 50 }}>
-                    <p>Remote: {isReceiveConnected ? "Connected" : "Not Connected"}</p>
-                    <video ref={remoteVid} width={150} height={150} />
-                    <PianoInput
-                        disabled={!isReceiveConnected}
-                        instrumentName={instrument}
-                        width={width - 100}
-                        activeNotes={remoteActiveNotes}
+                {connections.map((connection) => (
+                    <div className="connection">
+                        <Connection
+                            key={connection.peer}
+                            peer={null}
+                            connection={connection}
+                            callingConnection={peerData.remoteMediaConnection}
+                            localStream={localStream}
+                            callPeer={callPeer}
+                            settings={settings}
+                            width={width - 20}
+                        />
+                    </div>
+                ))}
+                <div className="localConnection">
+                    <Connection
+                        connection={null}
+                        peer={localPeer}
+                        callingConnection={undefined}
+                        onMidiEvent={sendData}
+                        localStream={localStream}
+                        callPeer={callPeer}
+                        settings={settings}
+                        width={width - 4}
                     />
                 </div>
-                <div style={{ flex: "0 0 auto", marginLeft: 5, marginRight: 5 }}>
-                    <p>You: {connections.length > 0 ? "Sending" : "Not Sending"} </p>
-                    <video ref={localVid} width={200} height={200} />
-                    <PianoInput
-                        width={width - 10}
-                        enableKeyboardShortcuts
-                        onInput={onPianoInput}
-                        activeNotes={midiActiveNotes}
-                        instrumentName={instrument}
-                        disabled={!isReceiver && connections.length === 0}
-                    />
-                </div>
-                <StatusBar error={error} session={`${localPeerId}`} connections={connectionNanes} />
+                <StatusBar error={error} session={`${localPeer?.id}`} connections={connections.length} />
             </div>
         </div>
     );
@@ -131,8 +115,15 @@ export default styled(Player)`
     height: 100vh;
     touch-action: manipulation;
     box-sizing: border-box;
-    & video {
-        border: 2px solid black;
+    & .connection {
+        flex: 0 0 auto;
+        pointer-events: none;
+        margin-left: 10;
+        margin-right: 10;
+    }
+    & .localConnection {
+        margin-left: 2;
+        margin-right: 2;
     }
     & a {
         color: rgb(224, 224, 255);
@@ -149,15 +140,33 @@ export default styled(Player)`
 
     & > .modal {
         position: absolute;
-        top: 10vh;
-        color: white;
-        z-index: 1800;
-        left: 10vw;
-        box-shadow: 10px 10px 20px #888;
-        background-color: rgba(0, 0, 0, 0.9);
-        padding: 2vh;
-        height: 76vh;
-        width: 76vw;
-        overflow-y: scroll;
+        display: grid;
+        height: 100%;
+        width: 100%;
+        place-items: center;
+        place-content: center;
+        left: 0;
+        top: 3rem;
+        justify-content: center;
+        align-content: center;
+        > div {
+            display: flex;
+            align-items: center; /* new */
+            justify-content: center; /* new */
+
+            grid: 1/2 1/2;
+            color: white;
+            z-index: 1800;
+            /* left: 10vw; */
+            box-shadow: 10px 10px 20px #000;
+            background-color: rgba(0, 0, 0, 0.9);
+            padding-left: 2rem;
+            padding-right: 2rem;
+            padding-top: 0rem;
+            padding-bottom: 0rem;
+            max-width: 75vw;
+            max-height: 85vh;
+            overflow-y: scroll;
+        }
     }
 `;

@@ -1,10 +1,33 @@
-import { MediaConnection } from "peerjs";
+import { MediaConnection, DataConnection } from "peerjs";
 import { useCallback, useEffect, useState } from "react";
 
-export function useRemoteStream(
+/** Hook that returns a answered connection from a calling connection
+ * @param remoteMediaConnection Connection that is being actively called
+ * @param localStream Stream of the local AV
+ * @returns Answered Connection, function to answer and error
+ */
+export function useAnswerRemote(
     remoteMediaConnection: MediaConnection | undefined,
     localStream: MediaStream | undefined
-) {
+): [MediaConnection | undefined, () => void] {
+    const [answeredConnection, setAnsweredConnection] = useState<MediaConnection | undefined>();
+
+    // When press call or answer
+    const answerCall = useCallback(() => {
+        if (!localStream || !remoteMediaConnection) {
+            setAnsweredConnection(undefined);
+        } else {
+            remoteMediaConnection.answer(localStream);
+            setAnsweredConnection(remoteMediaConnection);
+        }
+    }, [localStream, remoteMediaConnection]);
+
+    return [answeredConnection, answerCall];
+}
+
+export function useStreamFromRemoteConnection(
+    remoteMediaConnection: MediaConnection | undefined
+): [MediaStream | undefined, any] {
     const [remoteStream, setRemoteStream] = useState<MediaStream | undefined>();
     const [remoteStreamError, setRemoteStreamError] = useState<any>(null);
     const onCloseStream = useCallback(() => setRemoteStream(undefined), [setRemoteStream]);
@@ -26,27 +49,26 @@ export function useRemoteStream(
         };
     }, [remoteMediaConnection, onCloseStream, onErrorStream, onRemoteStream]);
 
-    // When press call or answer
-    const answerRemote = useCallback(() => {
-        if (!localStream) return;
-        if (!!remoteMediaConnection) {
-            remoteMediaConnection.answer(localStream);
-        }
-    }, [localStream, remoteMediaConnection]);
-
-    return { remoteStream, answerRemote, remoteStreamError };
+    return [remoteStream, remoteStreamError];
 }
 
-export function useLocalStream(
+/** Hook to return a function to make a call on a connection to a peer.
+ * @param localStream - local AV stream to call with
+ * @param connection - data connection to peer - or null if this is local then NOP
+ */
+export function useCallRemote(
     localStream: MediaStream | undefined,
-    callPeer: (x: MediaStream) => MediaConnection | undefined
+    connection: DataConnection | null,
+    callPeer: (connection: DataConnection, x: MediaStream) => MediaConnection | undefined
 ): [MediaConnection | undefined, () => void] {
     const [localIsCallingConnection, setLocalIsCallingConnection] = useState<MediaConnection | undefined>();
     const onCallOrAnswer = useCallback(() => {
-        if (localStream) {
-            const remote = callPeer(localStream);
-            setLocalIsCallingConnection(remote || undefined);
+        if (localStream && !!connection) {
+            const remote = callPeer(connection, localStream);
+            setLocalIsCallingConnection(remote);
+        } else {
+            setLocalIsCallingConnection(undefined);
         }
-    }, [localStream, callPeer]);
+    }, [connection, localStream, callPeer]);
     return [localIsCallingConnection, onCallOrAnswer];
 }

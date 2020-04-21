@@ -1,7 +1,7 @@
 import React, { FC, useCallback } from "react";
 import Clipboard from "react-clipboard.js";
-import { FaCamera, FaPhone } from "react-icons/fa";
-import { FiCameraOff, FiMic, FiMicOff, FiSettings, FiHelpCircle } from "react-icons/fi";
+import { FaCamera } from "react-icons/fa";
+import { FiCameraOff, FiHelpCircle, FiMic, FiMicOff, FiSettings } from "react-icons/fi";
 import styled from "styled-components";
 
 export interface CallOptions {

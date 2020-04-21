@@ -1,6 +1,5 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Peer, { DataConnection, MediaConnection } from "peerjs";
-import { Dictionary } from "lodash";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface PeerError {
     type: string;

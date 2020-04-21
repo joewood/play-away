@@ -1,13 +1,13 @@
-import * as React from "react";
-import { PianoInput, usePiano } from "./piano";
-import { memo, useCallback, useRef, useEffect } from "react";
-import styled from "styled-components";
-import { useConnection } from "./use-peer";
 import Peer, { DataConnection, MediaConnection } from "peerjs";
-import { useRemoteStream, useLocalStream } from "./video-hook";
-import { MidiEvent } from "./hooks";
-import { SettingsType } from "./settings";
+import * as React from "react";
+import { memo, useEffect, useRef } from "react";
 import { FaPhone } from "react-icons/fa";
+import styled from "styled-components";
+import { MidiEvent } from "./hooks";
+import { PianoInput, usePiano } from "./piano";
+import { SettingsType } from "./settings";
+import { useConnection } from "./use-peer";
+import { useAnswerRemote, useCallRemote, useStreamFromRemoteConnection } from "./video-hook";
 
 /** Plug a stream into a video element and play it
  * @returns Video Ref for use on a video tag
@@ -51,7 +51,7 @@ interface ConnectionProps {
     /** Actual data connection - null if local */
     connection: DataConnection | null;
     /** Make a call to this connection */
-    callPeer: (connection: DataConnection | null, stream: MediaStream | undefined) => MediaConnection | undefined;
+    callPeer: (connection: DataConnection | null, localStream: MediaStream | undefined) => MediaConnection | undefined;
     className?: string;
     width: number;
     settings: SettingsType;
@@ -63,17 +63,11 @@ const _Connection = memo<ConnectionProps>(
         // returns the stream of Midi Events - no-ops if the connection is null (local)
         const [data, isOpen, error] = useConnection<MidiEvent>(connection);
         // returns the remote AV stream - no-ops if the connection is null
-        const { remoteStream: stream, answerRemote, remoteStreamError } = useRemoteStream(
-            callingConnection,
-            localStream
+        const [answeredConnection, answerCall] = useAnswerRemote(callingConnection, localStream);
+        const [localIsCallingConnection, makeCall] = useCallRemote(localStream, connection, callPeer);
+        const [remoteStream, remoteStreamError] = useStreamFromRemoteConnection(
+            callingConnection || localIsCallingConnection
         );
-        const videoStream = isLocal ? localStream : stream;
-        const callPeerForConnection = useCallback((stream: MediaStream | undefined) => callPeer(connection, stream), [
-            callPeer,
-            connection,
-        ]);
-        const onCallPeerClick = useCallback(() => callPeer(connection, stream), [callPeer, connection, stream]);
-        const [localIsCallingConnection, makeCall] = useLocalStream(localStream, callPeerForConnection);
         const { pianoData, ...pianoProps } = usePiano(data || null, isLocal);
         useEffect(() => {
             pianoData && onMidiEvent && onMidiEvent(pianoData);
@@ -81,6 +75,9 @@ const _Connection = memo<ConnectionProps>(
         useEffect(() => {
             data && onMidiEvent && onMidiEvent(data);
         }, [data, onMidiEvent]);
+
+        const videoStream = isLocal ? localStream : remoteStream;
+
         return (
             <div className={className}>
                 {videoStream && (
@@ -90,7 +87,7 @@ const _Connection = memo<ConnectionProps>(
                 )}
                 <div className="piano">
                     <PianoInput
-                        width={stream ? width - 150 - 4 : width}
+                        width={answeredConnection ? width - 150 - 4 : width}
                         instrumentName={settings.instrument}
                         local={!connection}
                         connected={!connection || connection.open}
@@ -105,9 +102,9 @@ const _Connection = memo<ConnectionProps>(
                     {!!error && <span>{JSON.stringify(error)}</span>}
                     {!!remoteStreamError && <span>Stream Error: {JSON.stringify(remoteStreamError)}</span>}
                     {!!localIsCallingConnection && <span>{"Calling"}</span>}
-                    {!!answerRemote && !!callingConnection && <button onClick={answerRemote}>Answer Call</button>}
+                    {!!answerCall && !!callingConnection && <button onClick={answerCall}>Answer Call</button>}
                     {!!connection && (
-                        <button onClick={onCallPeerClick}>
+                        <button onClick={makeCall}>
                             Make Call
                             <FaPhone />
                         </button>
@@ -135,6 +132,7 @@ export const Connection = styled(_Connection)`
     & .piano {
         grid-row: 1/2;
         grid-column: 2/3;
+        pointer-events: ${({ connection }) => (!connection ? "inherit" : "none")};
     }
     & .status {
         grid-row: 2/3;

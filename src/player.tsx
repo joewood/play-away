@@ -3,9 +3,8 @@ import useDimensions from "react-use-dimensions";
 import styled from "styled-components";
 import { Connection } from "./connection";
 import { Header } from "./header";
-import { useMediaDevice, useMidiInputs, MidiEvent } from "./hooks";
+import { useMediaDevice, useMidiInputs } from "./hooks";
 import { StatusBar } from "./midi-components";
-import { usePiano } from "./piano";
 import { Settings, useSettings } from "./settings";
 import { usePeerConnection2 } from "./use-peer";
 import { Welcome } from "./welcome";
@@ -32,7 +31,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
         }),
         [cameraOn, microphoneOn, settings]
     );
-    const [localStream, mediaError] = useMediaDevice(mediaConstraints);
+    const [localStream] = useMediaDevice(mediaConstraints);
     const [midiInputData] = useMidiInputs(settings.midiInputId);
     // Connectivity Block
     const { callPeer, connections, localPeer, error, sendData, connectToPeer, ...peerData } = usePeerConnection2({
@@ -78,10 +77,10 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                     isReceiver={isReceiver}
                     broker={isReceiver ? broker : localPeer?.id || ""}
                 />
-                {connections.map((connection) => (
-                    <div className="connection">
+                {connections.map((connection, i) => (
+                    <div className="connection" key={i}>
                         <Connection
-                            key={connection.peer}
+                            key={i}
                             peer={null}
                             connection={connection}
                             callingConnection={peerData.remoteMediaConnection}
@@ -94,6 +93,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                 ))}
                 <div className="localConnection">
                     <Connection
+                        key="local"
                         connection={null}
                         peer={localPeer}
                         callingConnection={undefined}
@@ -117,7 +117,6 @@ export default styled(Player)`
     box-sizing: border-box;
     & .connection {
         flex: 0 0 auto;
-        pointer-events: none;
         margin-left: 10;
         margin-right: 10;
     }

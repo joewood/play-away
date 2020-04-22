@@ -9,6 +9,10 @@ import { Settings, useSettings } from "./settings";
 import { usePeerConnections } from "./use-peer";
 import { Welcome } from "./welcome";
 
+import createPersistedState from "use-persisted-state";
+const useMicrophoneState = createPersistedState<boolean>("microphone");
+const useCameraState = createPersistedState<boolean>("camera");
+
 interface RoomProps {
     isReceiver: boolean;
     broker?: string;
@@ -19,11 +23,20 @@ interface RoomProps {
 const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => {
     // Initialize Block
     const [ref, { width }] = useDimensions();
-    const [cameraOn, setCameraOn] = useState(false);
-    const [microphoneOn, setMicrophoneOn] = useState(false);
+    const [cameraOn, setCameraOn] = useCameraState(true);
+    const [microphoneOn, setMicrophoneOn] = useMicrophoneState(true);
     const { showSettings, onShowSettings, settings, ...settingsProps } = useSettings();
     const [showHelp, setShowHelp] = useState(false);
     const onShowHelp = useCallback(() => setShowHelp((prev) => !prev), [setShowHelp]);
+    const [audioContext, setAudioContext] = useState<AudioContext>();
+    const onSetupAudioContext = useCallback(() => {
+        const AudioContext =
+            window.AudioContext || // Default
+            (window as any).webkitAudioContext || // Safari and old versions of Chrome
+            false;
+        if (!AudioContext) return;
+        setAudioContext(new AudioContext());
+    }, []);
     const mediaConstraints = useMemo<MediaStreamConstraints>(
         () => ({
             audio: microphoneOn ? { deviceId: settings?.audioId } : undefined,
@@ -63,7 +76,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
             <div className="modal" style={{ visibility: showSettings ? "visible" : "collapse" }}>
                 <div>{showSettings && <Settings settings={settings} {...settingsProps} />}</div>
             </div>
-            <div className="main">
+            <div className="main" onClick={onSetupAudioContext}>
                 <Header
                     name={localPeer?.id || ""}
                     cameraOn={cameraOn}
@@ -88,6 +101,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                             callPeer={callPeer}
                             settings={settings}
                             isConnected={connection.open}
+                            audioContext={audioContext}
                             width={width - 20}
                         />
                     </div>
@@ -103,7 +117,8 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                         callPeer={callPeer}
                         isConnected={isConnected}
                         settings={settings}
-                        width={width - 4}
+                        audioContext={audioContext}
+                        width={width - 10}
                     />
                 </div>
                 <StatusBar
@@ -124,12 +139,12 @@ export default styled(Player)`
     box-sizing: border-box;
     & .connection {
         flex: 0 0 auto;
-        margin-left: 10;
-        margin-right: 10;
+        padding-left: 10px;
+        padding-right: 10px;
     }
     & .localConnection {
-        margin-left: 2;
-        margin-right: 2;
+        padding-left: 5px;
+        padding-right: 5px;
     }
     & a {
         color: rgb(224, 224, 255);
@@ -173,6 +188,22 @@ export default styled(Player)`
             max-width: 75vw;
             max-height: 85vh;
             overflow-y: scroll;
+        }
+    }
+    & .pulsate {
+        animation: pulsate 3s ease-out;
+        animation-iteration-count: infinite;
+        opacity: 0.5;
+    }
+    @keyframes pulsate {
+        0% {
+            opacity: 0.5;
+        }
+        50% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0.5;
         }
     }
 `;

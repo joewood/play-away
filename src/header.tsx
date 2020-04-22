@@ -48,8 +48,8 @@ const _Header: FC<HeaderProps> = ({
                 /PlayAway
             </a>
             {isReceiver && broker && isConnected && (
-                <div className="join">
-                    <span>{broker}</span>
+                <div className="join pulsate">
+                    <div>{broker}</div>
                     <button onClick={onJoin}>Join</button>
                 </div>
             )}
@@ -89,15 +89,21 @@ export const Header = styled(_Header)`
         padding: 0.25rem;
     }
     & .join {
-        font-size: 0.75rem;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 0.25rem;
-        > a {
-            padding-left: 0.25rem;
-            padding-right: 0.25rem;
+        align-self: center;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        & > *:first-child {
+            font-size: 1rem;
+            display: inline-block;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.25rem;
+            padding: 0.5rem;
         }
-        > button {
-            font-size: 0.75rem;
+        & > button {
+            display: inline-block;
+            font-size: 1rem;
+            padding: 0.5rem;
         }
     }
     > * {

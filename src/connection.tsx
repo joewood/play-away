@@ -45,7 +45,7 @@ interface ConnectionProps {
     callingConnection: MediaConnection | undefined;
     /** Midi Event from Connection (or locally from keyboard UI) */
     onMidiEvent?: (midiEvent: MidiEvent) => void;
-
+    audioContext: AudioContext | undefined;
     /** Local AV Stream (for answering) */
     localStream: MediaStream | undefined;
     /** Actual data connection - null if local */
@@ -63,6 +63,7 @@ const _Connection = memo<ConnectionProps>(
         className,
         peer,
         connection,
+        audioContext,
         localStream,
         callingConnection,
         callPeer,
@@ -104,6 +105,7 @@ const _Connection = memo<ConnectionProps>(
                         instrumentName={settings.instrument}
                         local={!connection}
                         connected={isConnected}
+                        audioContext={audioContext}
                         {...pianoProps}
                     />
                 </div>
@@ -116,10 +118,14 @@ const _Connection = memo<ConnectionProps>(
                         </div>
                         {!!remoteStreamError && <div>Stream Error: {JSON.stringify(remoteStreamError)}</div>}
                     </div>
-                    {!!localIsCallingConnection && <div>Calling</div>}
+                    {!!localIsCallingConnection && <div className="pulsate">Calling</div>}
                     <div className="commands">
-                        {!!answerCall && !!callingConnection && <button onClick={answerCall}>Answer Call</button>}
-                        {!!connection && (
+                        {!!answerCall && !!callingConnection && (
+                            <button className="pulsate" onClick={answerCall}>
+                                Answer Call
+                            </button>
+                        )}
+                        {!!connection && !callingConnection && !localIsCallingConnection && (
                             <button onClick={makeCall}>
                                 Make Call
                                 <FaPhone />
@@ -172,10 +178,10 @@ export const Connection = styled(_Connection)`
         padding-right: 0.5rem;
         padding-top: 0.25rem;
         padding-bottom: 0.25rem;
-        font-size: 1.5rem;
+        font-size: 1rem;
         background-color: rgba(255, 255, 255, 0.2);
         border: none;
         border-radius: 0px;
-        color: white;
+        color: black;
     }
 `;

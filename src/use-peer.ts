@@ -132,7 +132,12 @@ function usePeerConnection(
         if (!!localPeer) return;
         if (reconnect !== 0) return;
         setLocalPeer(
-            new Peer(opts.brokerId, { host: "play-away.azurewebsites.net", port: 80, path: "peerjs/playaway" })
+            new Peer(opts.brokerId, {
+                host: "play-away.azurewebsites.net",
+                port: 443,
+                secure: true,
+                path: "peerjs/playaway",
+            })
             // new Peer(opts.brokerId, { host: "localhost", port: 8080, path: "peerjs/playaway" })
         );
         return onDestroyPeer;

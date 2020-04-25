@@ -16,18 +16,9 @@ export const Welcome: FC<{ broker: string }> = ({ broker }) => {
                 </a>{" "}
             </p>
             <p>
-                To use, simple send the following link to play with a social distant friend (or click on it to open it
-                in another tab):
+                To use, simply send the link to this site to another user. They can identify themselves by setting them
+                name in the settings dialog.
             </p>
-            <blockquote>
-                <a href={joinUrl} target="__blank">
-                    {joinUrl}
-                </a>
-                {"  "}
-                <Clipboard data-clipboard-text={joinUrl} button-href="#">
-                    Copy Link
-                </Clipboard>
-            </blockquote>
 
             <p>This is work in progress weekend experiment, the current features are:</p>
             <ul>

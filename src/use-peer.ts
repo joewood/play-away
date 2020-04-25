@@ -212,7 +212,10 @@ export function usePeerConnections(opts: { brokerId: string } = { brokerId: "" }
     return usePeerReturn;
 }
 
-export function useConnection<TData extends {}>(connection: DataConnection | null): [TData | undefined, boolean, any] {
+export function useConnection<TData extends {}>(
+    connection: DataConnection | null,
+    onClose?: () => void
+): [TData | undefined, boolean, any] {
     const [data, setData] = useState<TData>();
     const [error, setError] = useState<any>();
     const [isOpen, setIsOpen] = useState(false);
@@ -226,8 +229,9 @@ export function useConnection<TData extends {}>(connection: DataConnection | nul
             connection.off("data", setData);
             connection.off("open", onOpen);
             connection.off("error", setError);
+            onClose && onClose();
         }
-    }, [connection, setData, onOpen, setError]);
+    }, [connection, setData, onOpen, setError, onClose]);
 
     if (!!connection) {
         connection.on("open", onOpen);

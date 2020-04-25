@@ -1,13 +1,13 @@
 import Peer, { DataConnection, MediaConnection } from "peerjs";
 import * as React from "react";
-import { memo, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { FaPhone } from "react-icons/fa";
 import styled from "styled-components";
-import { MidiEvent } from "./use-midi";
 import { PianoInput, usePiano } from "./piano";
 import { SettingsType } from "./settings";
-import { useConnection } from "./use-peer";
 import { useAnswerRemote, useCallRemote, useStreamFromRemoteConnection } from "./use-media-stream";
+import { MidiEvent } from "./use-midi";
+import { useConnection } from "./use-peer";
 
 /** Plug a stream into a video element and play it
  * @returns Video Ref for use on a video tag
@@ -52,6 +52,7 @@ interface ConnectionProps {
     connection: DataConnection | null;
     /** Make a call to this connection */
     callPeer: (connection: DataConnection | null, localStream: MediaStream | undefined) => MediaConnection | undefined;
+    onRemoveConnection: (connection: DataConnection) => void;
     className?: string;
     width: number;
     disabled?: boolean;
@@ -68,6 +69,7 @@ const _Connection = memo<ConnectionProps>(
         localStream,
         callingConnection,
         callPeer,
+        onRemoveConnection,
         width,
         onMidiEvent,
         isConnected: isLocalConnected,
@@ -75,8 +77,12 @@ const _Connection = memo<ConnectionProps>(
         settings,
     }) => {
         const isLocal = connection === null;
+        const onClose = useCallback(() => connection && onRemoveConnection(connection), [
+            connection,
+            onRemoveConnection,
+        ]);
         // returns the stream of Midi Events - no-ops if the connection is null (local)
-        const [data, isOpen, error] = useConnection<MidiEvent>(connection);
+        const [data, isOpen, error] = useConnection<MidiEvent>(connection, onClose);
         const isConnected = connection ? isOpen : isLocalConnected;
         // returns the remote AV stream - no-ops if the connection is null
         const [answeredConnection, answerCall] = useAnswerRemote(callingConnection, localStream);
@@ -93,7 +99,6 @@ const _Connection = memo<ConnectionProps>(
         }, [data, onMidiEvent]);
 
         const videoStream = isLocal ? localStream : remoteStream;
-
         return (
             <div className={className}>
                 {videoStream && (
@@ -115,7 +120,7 @@ const _Connection = memo<ConnectionProps>(
                     <div className="meta">
                         <div>{isConnected ? "Connected" : "Not Connected"}</div>
                         {!!error && <div>{JSON.stringify(error)}</div>}
-                        <div>{!!connection ? `${connection.metadata?.name || "Anon"}` : "Me"}</div>
+                        <div>{!!connection ? `${connection.peer}` : "Me"}</div>
                         {!!remoteStreamError && <div>Stream Error: {JSON.stringify(remoteStreamError)}</div>}
                     </div>
                     {!!localIsCallingConnection && <div className="pulsate">Calling</div>}

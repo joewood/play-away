@@ -1,28 +1,25 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import useDimensions from "react-use-dimensions";
 import styled from "styled-components";
+import createPersistedState from "use-persisted-state";
 import { Connection } from "./connection";
 import { Header } from "./header";
+import { Settings, useSettings } from "./settings";
+import { StatusBar } from "./statusbar";
 import { useMediaDevice } from "./use-media-device";
 import { useMidiInputs } from "./use-midi";
-import { StatusBar } from "./statusbar";
-import { Settings, useSettings } from "./settings";
 import { usePeerConnections } from "./use-peer";
+import { Join } from "./use-rooms";
 import { Welcome } from "./welcome";
-import { useRooms, Join } from "./use-rooms";
 
-import createPersistedState from "use-persisted-state";
 const useMicrophoneState = createPersistedState<boolean>("microphone");
 const useCameraState = createPersistedState<boolean>("camera");
 
 interface RoomProps {
-    isReceiver: boolean;
-    broker?: string;
-    override: string;
     className?: string;
 }
 
-const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => {
+const Player = memo<RoomProps>(({ className }) => {
     // Initialize Block
     const [ref, { width }] = useDimensions();
     const [cameraOn, setCameraOn] = useCameraState(true);
@@ -30,8 +27,6 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
     const { settings, ...settingsProps } = useSettings();
 
     const [showModal, setModal] = useState<"help" | "join" | "settings">();
-    // const [showHelp, setShowHelp] = useState(false);
-    // const [showJoin, setShowJoin] = useState(true);
     const [room, setRoom] = useState<string>();
 
     const onShowHelp = useCallback(() => setModal((prev) => (prev === "help" ? undefined : "help")), [setModal]);
@@ -47,7 +42,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
     const mediaConstraints = useMemo<MediaStreamConstraints>(
         () => ({
             audio: microphoneOn ? { deviceId: settings?.audioId } : undefined,
-            video: cameraOn ? { deviceId: settings?.videoId } : undefined,
+            video: cameraOn ? { deviceId: settings?.videoId, width: 150, height: 150 } : undefined,
         }),
         [cameraOn, microphoneOn, settings]
     );
@@ -127,6 +122,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                             isConnected={connection.open}
                             audioContext={audioContext}
                             width={width - 20}
+                            onRemoveConnection={removeConnection}
                         />
                     </div>
                 ))}
@@ -144,6 +140,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                         settings={settings}
                         audioContext={audioContext}
                         width={width - 10}
+                        onRemoveConnection={removeConnection}
                     />
                 </div>
                 <StatusBar

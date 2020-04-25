@@ -26,18 +26,10 @@ body {
   }
   `;
 
-const params = new URLSearchParams(document.location.search.substring(1));
-
-const override = params.get("override");
-const broker = params.get("broker");
 ReactDOM.render(
     <React.StrictMode>
         <GlobalStyle />
-        {broker !== null ? (
-            <PlayerSizer isReceiver={true} override={override || ""} broker={broker} />
-        ) : (
-            <PlayerSizer isReceiver={false} override={override || ""} />
-        )}
+        <PlayerSizer />
     </React.StrictMode>,
     document.getElementById("root")
 );

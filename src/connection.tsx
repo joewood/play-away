@@ -115,20 +115,19 @@ const _Connection = memo<ConnectionProps>(
                     <div className="meta">
                         <div>{isConnected ? "Connected" : "Not Connected"}</div>
                         {!!error && <div>{JSON.stringify(error)}</div>}
-                        <div>{connection ? `${connection.metadata?.name || "Anon"}` : settings.name}</div>
+                        <div>{!!connection ? `${connection.metadata?.name || "Anon"}` : "Me"}</div>
                         {!!remoteStreamError && <div>Stream Error: {JSON.stringify(remoteStreamError)}</div>}
                     </div>
                     {!!localIsCallingConnection && <div className="pulsate">Calling</div>}
                     <div className="commands">
-                        {!!answerCall && !!callingConnection && (
+                        {!!answerCall && !!callingConnection && !videoStream && (
                             <button className="pulsate" onClick={answerCall}>
-                                Answer Call
+                                Answer <FaPhone />
                             </button>
                         )}
                         {!!connection && !callingConnection && !localIsCallingConnection && (
                             <button onClick={makeCall}>
-                                Make Call
-                                <FaPhone />
+                                Call <FaPhone />
                             </button>
                         )}
                     </div>

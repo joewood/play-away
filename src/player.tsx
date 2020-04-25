@@ -94,7 +94,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                 <div>{showSettings && <Settings settings={settings} {...settingsProps} />}</div>
             </div>
             <div className="modal" style={{ visibility: showJoin ? "visible" : "collapse" }}>
-                <div>{showJoin && <Join onJoin={onJoin} />}</div>
+                <div>{showJoin && <Join name={settings.name} onJoin={onJoin} />}</div>
             </div>
 
             <div className="main" onClick={onSetupAudioContext}>

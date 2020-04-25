@@ -22,6 +22,7 @@ export function useRooms() {
 const Root = styled.div`
     width: auto;
     height: auto;
+    overflow: hidden;
     ul {
         margin: 2em;
         border: 3px solid #aaa;
@@ -40,16 +41,18 @@ const Root = styled.div`
     }
 `;
 
-export const Join: FC<{ onJoin: (room: string) => void }> = ({ onJoin }) => {
+export const Join: FC<{ name: string; onJoin: (room: string) => void }> = ({ name, onJoin }) => {
     const rooms = useRooms();
     return (
         <Root>
             <h1>PlayAway</h1>
             <p>The following rooms are currently active, select one to join:</p>
             <ul className="rooms">
-                {rooms.map((room) => (
-                    <li onClick={() => onJoin(room)}>{room}</li>
-                ))}
+                {rooms
+                    .filter((r) => r !== name)
+                    .map((room) => (
+                        <li onClick={() => onJoin(room)}>{room}</li>
+                    ))}
             </ul>
         </Root>
     );

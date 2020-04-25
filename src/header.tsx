@@ -81,7 +81,6 @@ export const Header = styled(_Header)`
     place-items: center end;
     padding-left: 2px;
     padding-right: 2px;
-    width: 100%;
     & > a {
         justify-self: start;
         text-shadow: 1px 0 5px rgba(192, 192, 255, 1);

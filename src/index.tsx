@@ -13,6 +13,17 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  html,body {
+    overflow:hidden;
+    width: 100vw;
+    height: 100vh;
+
+  }
+
+  html * {
+      box-sizing: border-box;
+  }
   `;
 
 const params = new URLSearchParams(document.location.search.substring(1));

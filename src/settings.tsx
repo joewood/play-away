@@ -1,7 +1,8 @@
 import React, { FC, useCallback, useEffect, useState, useMemo } from "react";
 import useInput from "react-use-input";
 import styled from "styled-components";
-import { useMediaDevices, useMidi } from "./hooks";
+import { useMediaDevices } from "./use-media-device";
+import { useMidi } from "./use-midi";
 import { instrumentList } from "./instruments";
 import createPersistedState from "use-persisted-state";
 

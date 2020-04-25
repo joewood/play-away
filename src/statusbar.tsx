@@ -1,7 +1,7 @@
 import React, { FC } from "react";
 import "react-piano/dist/styles.css";
 import styled from "styled-components";
-import { useMidi } from "./hooks";
+import { useMidi } from "./use-midi";
 import { PeerError } from "./use-peer";
 
 const _StatusBar: FC<{

@@ -3,11 +3,11 @@ import * as React from "react";
 import { memo, useEffect, useRef } from "react";
 import { FaPhone } from "react-icons/fa";
 import styled from "styled-components";
-import { MidiEvent } from "./hooks";
+import { MidiEvent } from "./use-midi";
 import { PianoInput, usePiano } from "./piano";
 import { SettingsType } from "./settings";
 import { useConnection } from "./use-peer";
-import { useAnswerRemote, useCallRemote, useStreamFromRemoteConnection } from "./video-hook";
+import { useAnswerRemote, useCallRemote, useStreamFromRemoteConnection } from "./use-media-stream";
 
 /** Plug a stream into a video element and play it
  * @returns Video Ref for use on a video tag

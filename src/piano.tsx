@@ -3,7 +3,7 @@ import { KeyboardShortcuts, MidiNumbers, Piano } from "react-piano";
 import "react-piano/dist/styles.css";
 import Soundfont from "soundfont-player";
 import styled from "styled-components";
-import { MidiEvent, PLAY, STOP, useActiveNotes } from "./hooks";
+import { MidiEvent, PLAY, STOP, useActiveNotes } from "./use-midi";
 
 /** Return the Props for the piano
  * @param stream Video or Audio Stram for this Piano

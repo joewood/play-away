@@ -57,7 +57,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
         connectToPeer,
         ...peerData
     } = usePeerConnections({
-        brokerId: override,
+        brokerId: settings.name,
     });
     useEffect(() => {
         if (!!midiInputData) sendData(midiInputData);
@@ -109,6 +109,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                 <div className="localConnection">
                     <Connection
                         key="local"
+                        disabled={showSettings}
                         connection={null}
                         peer={localPeer}
                         callingConnection={undefined}
@@ -124,7 +125,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                 <StatusBar
                     error={peerError}
                     connected={isConnected}
-                    session={localPeer?.id}
+                    session={localPeer?.id || "Initializing"}
                     connections={connections.length}
                 />
             </div>

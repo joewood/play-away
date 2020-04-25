@@ -11,10 +11,10 @@ export interface SettingsType {
     instrument: string;
     midiInputId: string | undefined;
     midiOutputId: string | undefined;
-    name: string | undefined;
+    name: string;
 }
 
-const useSettingsState = createPersistedState<SettingsType>("settings");
+const useSettingsState = createPersistedState<SettingsType>("play-away-settings");
 
 export function useSettings() {
     const [settings, onChange] = useSettingsState({
@@ -23,7 +23,7 @@ export function useSettings() {
         videoId: undefined,
         midiInputId: undefined,
         midiOutputId: undefined,
-        name: undefined,
+        name: undefined || "anon-" + Math.floor(Math.random() * 1000000),
     });
     const [showSettings, setShowSettings] = useState<boolean>(false);
     const onCloseSettings = useCallback(() => setShowSettings(false), [setShowSettings]);

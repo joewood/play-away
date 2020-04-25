@@ -36,77 +36,108 @@ interface UsePeer<TData extends {}> {
  */
 function usePeerConnection(
     opts: { brokerId: string } = { brokerId: "" }
-): [boolean, Peer, DataConnection | undefined, MediaConnection | undefined, PeerError | undefined] {
+): [boolean, Peer | undefined, DataConnection | undefined, MediaConnection | undefined, PeerError | undefined] {
     const [isOpen, setIsOpen] = useState(false);
-    const [localPeer, setLocalPeer] = useState<Peer>(new Peer(opts.brokerId));
+    const [localPeer, setLocalPeer] = useState<Peer>();
     const [localPeerId, setLocalPeerId] = useState(opts.brokerId);
     const [error, setLocalPeerError] = useState<PeerError>();
     const [remoteCallingMediaConnection, setRemoteCallingMediaConnection] = useState<MediaConnection>();
     const [connection, setConnection] = useState<DataConnection>();
     const [reconnect, setReconnect] = useState(0);
-    // const [connections, setConnections] = useState<Peer.DataConnection[]>([]);
-    // const stateRef = useRef<TData>();
-
-    const onReconnectPeer = useCallback(() => {
-        console.log("RECONNECT");
-        localPeer.reconnect();
-    }, [localPeer]);
 
     const onOpenPeer = useCallback(() => {
+        if (!localPeer) return;
         setLocalPeerId((brokerId) => (brokerId !== localPeer.id ? localPeer.id : brokerId));
         setReconnect(0);
         setIsOpen(true);
         setLocalPeerError(undefined);
-        console.log("OPEN", localPeer.id);
+        console.log("Connected: " + localPeer.id);
     }, [localPeer, setLocalPeerId]);
 
-    useEffect(() => {
-        if (reconnect === 0) return;
-        console.log("RECOVER", localPeerId);
-        const t = setTimeout(() => {
-            console.log("Recreate", localPeerId);
-            // onReconnectPeer();
-            setLocalPeer(new Peer(localPeerId));
-        }, reconnect * 1000);
-        return () => clearTimeout(t);
-    }, [reconnect, setLocalPeer, onReconnectPeer, localPeerId]);
+    const onDisconnectReconnect = useCallback(() => {
+        if (!localPeer) return;
+        if (reconnect !== 0) {
+            console.log("Disconnected - Already Recovering - ignoring");
+            return;
+        }
+        return;
+        console.log("DISCONNECT RECONNECT");
+        setReconnect(6);
+        setLocalPeer(undefined);
+    }, [localPeer, setReconnect, reconnect]);
 
     const onError = useCallback(
         (err: PeerError) => {
-            console.log("Error " + err.type);
+            // if (err.type === "network") {
+            // setLocalPeerError(err);
+            // } else
             if (FATAL_ERRORS.includes(err.type)) {
-                setReconnect(5);
+                console.log("Fatal Error " + err.type);
+                setReconnect(10);
                 setLocalPeerError(err);
-                setIsOpen(false);
+                setLocalPeer(undefined);
             } else {
+                console.log("Non-Fatal Error: " + err.type);
                 setLocalPeerError(err);
             }
         },
-        [setLocalPeerError, setReconnect]
+        [setLocalPeerError, setLocalPeer, setReconnect]
     );
     // general events
     const onDestroyPeer = useCallback(() => {
+        if (!localPeer) return;
         console.log("DESTROY", localPeer.id);
-        localPeer.off("disconnected", onReconnectPeer);
+        localPeer.off("disconnected", onDisconnectReconnect);
         localPeer.off("open", onOpenPeer);
         localPeer.off("error", onError);
         localPeer.off("call", setRemoteCallingMediaConnection);
         localPeer.off("close", onDestroyPeer);
         localPeer.off("connection", setConnection);
-        setIsOpen(false);
         localPeer.destroy();
-    }, [localPeer, onOpenPeer, onError, onReconnectPeer]);
+        setIsOpen(false);
+    }, [localPeer, onOpenPeer, onError, onDisconnectReconnect]);
+
+    // Timer to reset RECOVERY
+    useEffect(() => {
+        if (reconnect === 0) return;
+        console.log("Waiting to connect in " + reconnect + " secs");
+        const t = setTimeout(() => {
+            console.log("Wait Complete:", localPeerId);
+            setReconnect(0);
+        }, reconnect * 1000);
+        return () => clearTimeout(t);
+    }, [reconnect, localPeerId]);
+    // do a reconnect by setting the reconnect state
+    // useEffect(() => {
+    //     if (!localPeer) return;
+    //     if (reconnect === 0) return;
+    //     console.log("RECOVER", localPeerId);
+    //     onDoReconnect(reconnect);
+    // }, [reconnect, onDoReconnect, localPeerId, localPeer]);
 
     useEffect(() => {
+        if (!localPeer) return;
         // in response to these callbacks we just set the hook state which is then returned
-        localPeer.on("disconnected", onReconnectPeer);
+        localPeer.on("disconnected", onDisconnectReconnect);
         localPeer.on("open", onOpenPeer);
         localPeer.on("error", onError);
         localPeer.on("call", setRemoteCallingMediaConnection);
         localPeer.on("close", onDestroyPeer);
         localPeer.on("connection", setConnection);
         return onDestroyPeer;
-    }, [localPeer, onOpenPeer, onDestroyPeer, onError, onReconnectPeer]);
+    }, [localPeer, onOpenPeer, onDestroyPeer, onError, onDisconnectReconnect]);
+
+    // initializer and connect, use a deferred reconnect timer
+    useEffect(() => {
+        if (!!localPeer) return;
+        if (reconnect !== 0) return;
+        setLocalPeer(
+            new Peer(opts.brokerId, { host: "play-away.azurewebsites.net", port: 80, path: "peerjs/playaway" })
+            // new Peer(opts.brokerId, { host: "localhost", port: 8080, path: "peerjs/playaway" })
+        );
+        return onDestroyPeer;
+    }, [localPeer, setLocalPeer, reconnect, onDestroyPeer, opts.brokerId]);
+
     return [isOpen, localPeer, connection, remoteCallingMediaConnection, error];
 }
 
@@ -123,7 +154,7 @@ export function usePeerConnections(opts: { brokerId: string } = { brokerId: "" }
     // Receive Mode
     const connectToPeer = useCallback(
         (peerId: string, metadata: any | undefined, label?: string | undefined) => {
-            if (!peerId || localPeer.disconnected) return;
+            if (!peerId || !localPeer || localPeer.disconnected) return;
             const connection = localPeer.connect(peerId, { label: label, metadata: metadata });
             setConnections((prevState) => [...prevState, connection]);
         },
@@ -133,7 +164,7 @@ export function usePeerConnections(opts: { brokerId: string } = { brokerId: "" }
     const callPeer = useCallback(
         (connection: DataConnection | null, localStream: MediaStream | undefined) => {
             if (!!connection?.open && localStream)
-                return localPeer.call(connection.peer, localStream, { metadata: connection.metadata });
+                return localPeer && localPeer.call(connection.peer, localStream, { metadata: connection.metadata });
             else return undefined;
         },
         [localPeer]

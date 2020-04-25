@@ -40,7 +40,7 @@ const Video = memo<VideoProps>(({ width, stream, muted }) => {
 });
 
 interface ConnectionProps {
-    peer: Peer | null;
+    peer: Peer | null | undefined;
     /** Media connection active if being called */
     callingConnection: MediaConnection | undefined;
     /** Midi Event from Connection (or locally from keyboard UI) */
@@ -54,6 +54,7 @@ interface ConnectionProps {
     callPeer: (connection: DataConnection | null, localStream: MediaStream | undefined) => MediaConnection | undefined;
     className?: string;
     width: number;
+    disabled?: boolean;
     isConnected: boolean;
     settings: SettingsType;
 }
@@ -70,6 +71,7 @@ const _Connection = memo<ConnectionProps>(
         width,
         onMidiEvent,
         isConnected: isLocalConnected,
+        disabled,
         settings,
     }) => {
         const isLocal = connection === null;
@@ -101,10 +103,10 @@ const _Connection = memo<ConnectionProps>(
                 )}
                 <div className="piano">
                     <PianoInput
-                        width={answeredConnection ? width - 150 - 4 : width}
+                        width={videoStream ? width - 150 - 4 : width}
                         instrumentName={settings.instrument}
                         local={!connection}
-                        connected={isConnected}
+                        connected={isConnected && !disabled}
                         audioContext={audioContext}
                         {...pianoProps}
                     />
@@ -113,9 +115,7 @@ const _Connection = memo<ConnectionProps>(
                     <div className="meta">
                         <div>{isConnected ? "Connected" : "Not Connected"}</div>
                         {!!error && <div>{JSON.stringify(error)}</div>}
-                        <div>
-                            {connection ? `${connection.metadata?.name || "Anon"} (${connection.peer})` : settings.name}
-                        </div>
+                        <div>{connection ? `${connection.metadata?.name || "Anon"}` : settings.name}</div>
                         {!!remoteStreamError && <div>Stream Error: {JSON.stringify(remoteStreamError)}</div>}
                     </div>
                     {!!localIsCallingConnection && <div className="pulsate">Calling</div>}
@@ -148,13 +148,17 @@ export const Connection = styled(_Connection)`
         grid-row: 1/2;
         grid-column: 1/2;
         & > video {
-            border: 1px solid #aaa;
+            border: 1px solid #777;
             box-shadow: 4px 4px 8px #bbb;
+            align-self: center;
+            justify-self: center;
         }
     }
     & .piano {
         grid-row: 1/2;
         grid-column: 2/3;
+        align-self: center;
+        justify-self: center;
         pointer-events: ${({ connection }) => (!connection ? "inherit" : "none")};
     }
     & .status {

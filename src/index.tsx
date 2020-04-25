@@ -23,7 +23,7 @@ ReactDOM.render(
     <React.StrictMode>
         <GlobalStyle />
         {broker !== null ? (
-            <PlayerSizer isReceiver={true} override="" broker={broker} />
+            <PlayerSizer isReceiver={true} override={override || ""} broker={broker} />
         ) : (
             <PlayerSizer isReceiver={false} override={override || ""} />
         )}

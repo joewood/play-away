@@ -9,6 +9,7 @@ import { StatusBar } from "./statusbar";
 import { Settings, useSettings } from "./settings";
 import { usePeerConnections } from "./use-peer";
 import { Welcome } from "./welcome";
+import { useRooms, Join } from "./use-rooms";
 
 import createPersistedState from "use-persisted-state";
 const useMicrophoneState = createPersistedState<boolean>("microphone");
@@ -28,6 +29,9 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
     const [microphoneOn, setMicrophoneOn] = useMicrophoneState(true);
     const { showSettings, onShowSettings, settings, ...settingsProps } = useSettings();
     const [showHelp, setShowHelp] = useState(false);
+    const [showJoin, setShowJoin] = useState(true);
+    const [room, setRoom] = useState<string>();
+
     const onShowHelp = useCallback(() => setShowHelp((prev) => !prev), [setShowHelp]);
     const [audioContext, setAudioContext] = useState<AudioContext>();
     const onSetupAudioContext = useCallback(() => {
@@ -56,16 +60,28 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
         peerError,
         sendData,
         connectToPeer,
+        removeConnection,
         ...peerData
     } = usePeerConnections({
         brokerId: settings.name,
     });
+    const onLeave = useCallback(() => {
+        for (const c of connections) {
+            removeConnection(c);
+        }
+        setShowJoin(true);
+    }, [connections, removeConnection]);
     useEffect(() => {
         if (!!midiInputData) sendData(midiInputData);
     }, [midiInputData, sendData]);
-    const onJoin = useCallback(() => {
-        if (!!broker) connectToPeer(broker, { name: settings.name || "anon" });
-    }, [connectToPeer, broker, settings.name]);
+    const onJoin = useCallback(
+        (room: string) => {
+            setShowJoin(false);
+            setRoom(room);
+            if (!!room) connectToPeer(room, { name: settings.name || "anon" });
+        },
+        [connectToPeer, settings.name]
+    );
 
     return (
         <div className={className} ref={ref}>
@@ -77,19 +93,23 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
             <div className="modal" style={{ visibility: showSettings ? "visible" : "collapse" }}>
                 <div>{showSettings && <Settings settings={settings} {...settingsProps} />}</div>
             </div>
+            <div className="modal" style={{ visibility: showJoin ? "visible" : "collapse" }}>
+                <div>{showJoin && <Join onJoin={onJoin} />}</div>
+            </div>
+
             <div className="main" onClick={onSetupAudioContext}>
                 <Header
                     name={localPeer?.id || ""}
                     cameraOn={cameraOn}
                     onCameraOn={setCameraOn}
                     microphoneOn={microphoneOn}
+                    room={room}
+                    onLeave={onLeave}
                     onMicrophoneOn={setMicrophoneOn}
                     onShowSettings={onShowSettings}
                     onShowHelp={onShowHelp}
-                    onJoin={onJoin}
-                    isReceiver={isReceiver}
+                    onJoinOn={setShowJoin}
                     isConnected={isConnected}
-                    broker={isReceiver ? broker : localPeer?.id || ""}
                 />
                 {connections.map((connection, i) => (
                     <div className="connection" key={i}>

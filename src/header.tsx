@@ -1,5 +1,4 @@
 import React, { FC, useCallback } from "react";
-import Clipboard from "react-clipboard.js";
 import { FaCamera } from "react-icons/fa";
 import { FiCameraOff, FiHelpCircle, FiMic, FiMicOff, FiSettings } from "react-icons/fi";
 import styled from "styled-components";
@@ -12,14 +11,14 @@ export interface CallOptions {
 interface HeaderProps {
     name: string;
     className?: string;
-    isReceiver: boolean;
-    broker?: string;
+    room: string | undefined;
     cameraOn: boolean;
     microphoneOn: boolean;
     isConnected: boolean;
-    onJoin: () => void;
+    onLeave: () => void;
     onShowHelp: () => void;
     onCameraOn: (on: boolean) => void;
+    onJoinOn: (on: boolean) => void;
     onMicrophoneOn: (on: boolean) => void;
     onShowSettings: () => void;
 }
@@ -28,10 +27,10 @@ const url = window.location.toString();
 
 const _Header: FC<HeaderProps> = ({
     className,
-    isReceiver,
-    broker,
     cameraOn,
-    onJoin,
+    onJoinOn,
+    room,
+    onLeave,
     microphoneOn,
     isConnected,
     onCameraOn,
@@ -39,7 +38,7 @@ const _Header: FC<HeaderProps> = ({
     onShowSettings,
     onShowHelp,
 }) => {
-    const joinUrl = `${url}?broker=${broker}`;
+    // const joinUrl = `${url}?broker=${broker}`;
     const onClickCameraOn = useCallback((x: any) => onCameraOn(!cameraOn), [onCameraOn, cameraOn]);
     const onClickMicrophoneOn = useCallback((x: any) => onMicrophoneOn(!microphoneOn), [onMicrophoneOn, microphoneOn]);
     return (
@@ -47,20 +46,13 @@ const _Header: FC<HeaderProps> = ({
             <a className="logo" href="/">
                 /PlayAway
             </a>
-            {isReceiver && broker && isConnected && (
+            {isConnected && (
                 <div className="join pulsate">
-                    <div>{broker}</div>
-                    <button onClick={onJoin}>Join</button>
-                </div>
-            )}
-            {!isReceiver && broker && (
-                <div className="join">
-                    <a href={joinUrl} target="__blank">
-                        {joinUrl}
-                    </a>
-                    <Clipboard data-clipboard-text={joinUrl} button-href="#">
-                        Copy
-                    </Clipboard>
+                    {room === undefined ? (
+                        <button onClick={() => onJoinOn(true)}>Join</button>
+                    ) : (
+                        <button onClick={() => onLeave()}>Leave</button>
+                    )}
                 </div>
             )}
             <button onClick={onClickMicrophoneOn}>{microphoneOn ? <FiMic /> : <FiMicOff />}</button>

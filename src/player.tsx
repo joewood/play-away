@@ -71,6 +71,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
         for (const c of connections) {
             removeConnection(c);
         }
+        setRoom(undefined);
         setModal(undefined);
     }, [connections, removeConnection]);
     useEffect(() => {

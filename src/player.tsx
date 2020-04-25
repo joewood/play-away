@@ -27,12 +27,14 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
     const [ref, { width }] = useDimensions();
     const [cameraOn, setCameraOn] = useCameraState(true);
     const [microphoneOn, setMicrophoneOn] = useMicrophoneState(true);
-    const { showSettings, onShowSettings, settings, ...settingsProps } = useSettings();
-    const [showHelp, setShowHelp] = useState(false);
-    const [showJoin, setShowJoin] = useState(true);
+    const { settings, ...settingsProps } = useSettings();
+
+    const [showModal, setModal] = useState<"help" | "join" | "settings">();
+    // const [showHelp, setShowHelp] = useState(false);
+    // const [showJoin, setShowJoin] = useState(true);
     const [room, setRoom] = useState<string>();
 
-    const onShowHelp = useCallback(() => setShowHelp((prev) => !prev), [setShowHelp]);
+    const onShowHelp = useCallback(() => setModal((prev) => (prev === "help" ? undefined : "help")), [setModal]);
     const [audioContext, setAudioContext] = useState<AudioContext>();
     const onSetupAudioContext = useCallback(() => {
         const AudioContext =
@@ -69,14 +71,14 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
         for (const c of connections) {
             removeConnection(c);
         }
-        setShowJoin(true);
+        setModal(undefined);
     }, [connections, removeConnection]);
     useEffect(() => {
         if (!!midiInputData) sendData(midiInputData);
     }, [midiInputData, sendData]);
     const onJoin = useCallback(
         (room: string) => {
-            setShowJoin(false);
+            setModal(undefined);
             setRoom(room);
             if (!!room) connectToPeer(room, { name: settings.name || "anon" });
         },
@@ -85,16 +87,16 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
 
     return (
         <div className={className} ref={ref}>
-            <div className="modal" style={{ visibility: showHelp ? "visible" : "collapse" }}>
+            <div className="modal" style={{ visibility: !!showModal ? "visible" : "collapse" }}>
                 <div>
-                    <Welcome broker={localPeer?.id || "??"} />
+                    {showModal === "help" && <Welcome broker={localPeer?.id || "??"} />}
+                    {showModal === "settings" && (
+                        <Settings settings={settings} onCloseSettings={() => setModal(undefined)} {...settingsProps} />
+                    )}
+                    {showModal === "join" && (connections?.length || 0) === 0 && (
+                        <Join name={settings.name} onJoin={onJoin} />
+                    )}
                 </div>
-            </div>
-            <div className="modal" style={{ visibility: showSettings ? "visible" : "collapse" }}>
-                <div>{showSettings && <Settings settings={settings} {...settingsProps} />}</div>
-            </div>
-            <div className="modal" style={{ visibility: showJoin ? "visible" : "collapse" }}>
-                <div>{showJoin && <Join name={settings.name} onJoin={onJoin} />}</div>
             </div>
 
             <div className="main" onClick={onSetupAudioContext}>
@@ -106,9 +108,9 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                     room={room}
                     onLeave={onLeave}
                     onMicrophoneOn={setMicrophoneOn}
-                    onShowSettings={onShowSettings}
+                    onShowSettings={() => setModal("settings")}
                     onShowHelp={onShowHelp}
-                    onJoinOn={setShowJoin}
+                    onJoinOn={() => setModal("join")}
                     isConnected={isConnected}
                 />
                 {connections.map((connection, i) => (
@@ -130,7 +132,7 @@ const Player = memo<RoomProps>(({ isReceiver, broker, override, className }) => 
                 <div className="localConnection">
                     <Connection
                         key="local"
-                        disabled={showSettings}
+                        disabled={showModal !== undefined}
                         connection={null}
                         peer={localPeer}
                         callingConnection={undefined}

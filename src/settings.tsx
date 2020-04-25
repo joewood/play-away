@@ -26,16 +26,7 @@ export function useSettings() {
         midiOutputId: undefined,
         name: undefined || "anon-" + Math.floor(Math.random() * 1000000),
     });
-    const [showSettings, setShowSettings] = useState<boolean>(false);
-    const onCloseSettings = useCallback(() => setShowSettings(false), [setShowSettings]);
-    const onShowSettings = useCallback(() => setShowSettings(true), [setShowSettings]);
-    return useMemo(() => ({ settings, onChange, showSettings, onShowSettings, onCloseSettings }), [
-        settings,
-        onChange,
-        showSettings,
-        onShowSettings,
-        onCloseSettings,
-    ]);
+    return useMemo(() => ({ settings, onChange }), [settings, onChange]);
 }
 
 interface SettingsProps {

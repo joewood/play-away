@@ -96,7 +96,6 @@ const _Connection = memo<ConnectionProps>(
             callingConnection || localIsCallingConnection
         );
         const { pianoData, activeNotes, onInput } = usePiano((isLocal ? midiInputData : data) || null, isLocal);
-        console.log("piano", activeNotes);
         useEffect(() => {
             pianoData && onMidiEvent && onMidiEvent(pianoData);
         }, [pianoData, onMidiEvent]);

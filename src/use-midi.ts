@@ -70,7 +70,6 @@ export function useMidiInputs(midiId: string | undefined) {
     const onData = useCallback(
         (evt: WebMidi.MIDIMessageEvent) => {
             const data = evt.data;
-            console.log("Midi Data", data);
             if (data.length === 3) {
                 setData(getEventData(data));
             }

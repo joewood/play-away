@@ -6,7 +6,7 @@ import styled from "styled-components";
 import { PianoInput, usePiano } from "./piano";
 import { SettingsType } from "./settings";
 import { useAnswerRemote, useCallRemote, useStreamFromRemoteConnection } from "./use-media-stream";
-import { MidiEvent } from "./use-midi";
+import { MidiEvent, useMidiInputs } from "./use-midi";
 import { useConnection } from "./use-peer";
 
 /** Plug a stream into a video element and play it
@@ -45,6 +45,8 @@ interface ConnectionProps {
     callingConnection: MediaConnection | undefined;
     /** Midi Event from Connection (or locally from keyboard UI) */
     onMidiEvent?: (midiEvent: MidiEvent) => void;
+    /** Midi Input Device if this is a local Connection - otherwise undefined */
+    midiDevice?: string | undefined;
     audioContext: AudioContext | undefined;
     /** Local AV Stream (for answering) */
     localStream: MediaStream | undefined;
@@ -67,6 +69,7 @@ const _Connection = memo<ConnectionProps>(
         connection,
         audioContext,
         localStream,
+        midiDevice,
         callingConnection,
         callPeer,
         onRemoveConnection,
@@ -83,6 +86,8 @@ const _Connection = memo<ConnectionProps>(
         ]);
         // returns the stream of Midi Events - no-ops if the connection is null (local)
         const [data, isOpen, error] = useConnection<MidiEvent>(connection, onClose);
+        const [midiInputData] = useMidiInputs(midiDevice);
+
         const isConnected = connection ? isOpen : isLocalConnected;
         // returns the remote AV stream - no-ops if the connection is null
         const [answeredConnection, answerCall] = useAnswerRemote(callingConnection, localStream);
@@ -90,13 +95,17 @@ const _Connection = memo<ConnectionProps>(
         const [remoteStream, remoteStreamError] = useStreamFromRemoteConnection(
             callingConnection || localIsCallingConnection
         );
-        const { pianoData, ...pianoProps } = usePiano(data || null, isLocal);
+        const { pianoData, activeNotes, onInput } = usePiano((isLocal ? midiInputData : data) || null, isLocal);
+        console.log("piano", activeNotes);
         useEffect(() => {
             pianoData && onMidiEvent && onMidiEvent(pianoData);
         }, [pianoData, onMidiEvent]);
         useEffect(() => {
             data && onMidiEvent && onMidiEvent(data);
         }, [data, onMidiEvent]);
+        useEffect(() => {
+            midiInputData && onMidiEvent && onMidiEvent(midiInputData);
+        }, [midiInputData, onMidiEvent]);
 
         const videoStream = isLocal ? localStream : remoteStream;
         return (
@@ -113,7 +122,8 @@ const _Connection = memo<ConnectionProps>(
                         local={!connection}
                         connected={isConnected && !disabled}
                         audioContext={audioContext}
-                        {...pianoProps}
+                        activeNotes={activeNotes}
+                        onInput={onInput}
                     />
                 </div>
                 <div className="status">

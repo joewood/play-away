@@ -1,10 +1,10 @@
-import React, { FC, useCallback, useEffect, useState, useMemo } from "react";
+import React, { FC, useEffect, useMemo } from "react";
 import useInput from "react-use-input";
 import styled from "styled-components";
+import createPersistedState from "use-persisted-state";
+import { instrumentList } from "./instruments";
 import { useMediaDevices } from "./use-media-device";
 import { useMidi } from "./use-midi";
-import { instrumentList } from "./instruments";
-import createPersistedState from "use-persisted-state";
 
 export interface SettingsType {
     audioId: string | undefined;
@@ -29,14 +29,27 @@ export function useSettings() {
     return useMemo(() => ({ settings, onChange }), [settings, onChange]);
 }
 
-interface SettingsProps {
+const SettingsRoot = styled.div`
+    display: grid;
+    width: auto;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 2rem;
+    grid-template-columns: auto auto;
+    grid-template-rows: repeat(auto-fill, auto) auto;
+    row-gap: 2rem;
+    column-gap: 2rem;
+    justify-items: stretch;
+    font-size: 1rem;
+`;
+
+export interface SettingsProps {
     className?: string;
     settings: SettingsType;
     onChange: (callOptions: SettingsType) => void;
-    onCloseSettings: () => void;
 }
 
-const _Settings: FC<SettingsProps> = ({ className, settings, onChange, onCloseSettings }) => {
+export const Settings: FC<SettingsProps> = ({ className, settings, onChange }) => {
     const webMidi = useMidi();
     const mediaDevices = useMediaDevices();
 
@@ -58,8 +71,10 @@ const _Settings: FC<SettingsProps> = ({ className, settings, onChange, onCloseSe
     }, [onChange, audioId, videoId, mediaDevices, instrument, midiInputId, midiOutputId, name]);
 
     return (
-        <div className={className}>
+        <SettingsRoot>
             <div className="title">PlayAway Settings</div>
+            <label htmlFor="nameField">Unique Name:</label>
+            <input type="text" onChange={setName} value={name}></input>
             <label htmlFor="setaudio">Microphone:</label>
             <select id="setaudio" defaultValue={settings?.audioId} onChange={setAudioId}>
                 {mediaDevices
@@ -110,46 +125,6 @@ const _Settings: FC<SettingsProps> = ({ className, settings, onChange, onCloseSe
                     </option>
                 ))}
             </select>
-            <label htmlFor="nameField">Name:</label>
-            <input type="text" onChange={setName} value={name}></input>
-            <button onClick={onCloseSettings}>Close</button>
-        </div>
+        </SettingsRoot>
     );
 };
-export const Settings = styled(_Settings)`
-    display: grid;
-    width: auto;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 25px;
-    grid-template-columns: auto auto;
-    grid-template-rows: repeat(auto-fill, auto) auto;
-    row-gap: 2rem;
-    column-gap: 2rem;
-    justify-items: stretch;
-    font-size: 1rem;
-    & button {
-        font-size: 1rem;
-        grid-column: 1/3;
-        align-self: flex-end;
-        justify-self: end;
-        padding: 0.5rem;
-        font-weight: bold;
-        background-color: rgba(255, 255, 255, 0.1);
-        border: rgba(255, 255, 255, 0.2);
-        color: white;
-    }
-    & option,
-    & select {
-        font-size: 1rem;
-    }
-    & > .title {
-        font-size: 2rem;
-        grid-column: 1/3;
-    }
-    & a {
-        text-shadow: 1px 0 5px rgba(192, 192, 255, 1);
-        font-size: 20px;
-        padding: 10px;
-    }
-`;

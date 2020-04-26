@@ -7,27 +7,25 @@ export const Welcome: FC<{}> = () => {
             <h1>PlayAway</h1>
             <p>
                 This simple page is a peer to peer open-source music playing page to help support efforts of social
-                distancing for Corvid19. It is a total serverless solution, other than the metadata service{" "}
-                <a href="https://peerjs.com" target="__blank">
-                    PeerJS
-                </a>{" "}
+                distancing for CORVID19. It uses simple peer to peer networking to connect musicians, students or band
+                members.
             </p>
             <p>
-                To use, simply send the link to this site to another user. They can identify themselves by setting them
+                To use, simply send the link to this site to another user. They can identify themselves by setting their
                 name in the settings dialog.
             </p>
 
-            <p>This is work in progress weekend experiment, the current features are:</p>
+            <p>This is work-in-progress weekend experiment, the current features are:</p>
             <ul>
-                <li>Play music using the onscreen keyboard (mouse or keyboard)</li>
-                <li>Select from a variety of sound fonts</li>
-                <li>Send generated link to connect another computer</li>
+                <li>Connect to another connected user using their name</li>
+                <li>Play music using the on-screen keyboard (touch-screen, mouse or keyboard)</li>
+                <li>Attach a midi input device and play over the internet</li>
+                <li>Video or audio chat while playing</li>
+                <li>Select from a variety of sound font instruments</li>
                 <li>Complete bidirectional playing - near realtime</li>
-                <li>Attach a midi input device and play using a different instrument</li>
             </ul>
             <p>Ideas for future improvements:</p>
             <ul>
-                <li>Optionally include audio / video streams</li>
                 <li>Send a metronome beat</li>
                 <li>Record and playback the midi-stream</li>
                 <li>Record the audio stream</li>

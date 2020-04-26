@@ -60,9 +60,7 @@ function usePeerConnection(
             console.log("Disconnected - Already Recovering - ignoring");
             return;
         }
-        return;
-        console.log("DISCONNECT RECONNECT");
-        setReconnect(6);
+        setReconnect(11);
         setLocalPeer(undefined);
     }, [localPeer, setReconnect, reconnect]);
 

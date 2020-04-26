@@ -1,10 +1,7 @@
-import React, { FC } from "react";
-import Clipboard from "react-clipboard.js";
+import * as React from "react";
+import { FC } from "react";
 
-const url = `${window.location.toString()}`;
-
-export const Welcome: FC<{ broker: string }> = ({ broker }) => {
-    const joinUrl = `${url}?broker=${broker}`;
+export const Welcome: FC<{}> = () => {
     return (
         <div>
             <h1>PlayAway</h1>

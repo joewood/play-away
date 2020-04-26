@@ -26,7 +26,7 @@ const Player = memo<RoomProps>(({ className }) => {
     const [microphoneOn, setMicrophoneOn] = useMicrophoneState(true);
     const { settings, ...settingsProps } = useSettings();
 
-    const [showModal, setModal] = useState<"help" | "join" | "settings">();
+    const [showModal, setModal] = useState<"help" | "join" | "settings" | undefined>("join");
     const [room, setRoom] = useState<string>();
 
     const onShowHelp = useCallback(() => setModal((prev) => (prev === "help" ? undefined : "help")), [setModal]);
@@ -85,7 +85,7 @@ const Player = memo<RoomProps>(({ className }) => {
         <div className={className} ref={ref}>
             <div className="modal" style={{ visibility: !!showModal ? "visible" : "collapse" }}>
                 <div>
-                    {showModal === "help" && <Welcome broker={localPeer?.id || "??"} />}
+                    {showModal === "help" && <Welcome />}
                     {showModal === "settings" && (
                         <Settings settings={settings} onCloseSettings={() => setModal(undefined)} {...settingsProps} />
                     )}

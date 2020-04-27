@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useMemo } from "react";
+import React, { FC, useEffect, useMemo, memo } from "react";
 import useInput from "react-use-input";
 import styled from "styled-components";
 import createPersistedState from "use-persisted-state";
@@ -49,7 +49,7 @@ export interface SettingsProps {
     onChange: (callOptions: SettingsType) => void;
 }
 
-export const Settings: FC<SettingsProps> = ({ className, settings, onChange }) => {
+export const Settings = memo<SettingsProps>(({ className, settings, onChange }) => {
     const webMidi = useMidi();
     const mediaDevices = useMediaDevices();
 
@@ -60,6 +60,7 @@ export const Settings: FC<SettingsProps> = ({ className, settings, onChange }) =
     const [midiOutputId, setMidiOutputId] = useInput(settings.midiOutputId);
     const [name, setName] = useInput(settings.name);
     useEffect(() => {
+        console.log("Updating Settings", audioId + "-" + videoId);
         onChange({
             audioId,
             videoId,
@@ -69,7 +70,6 @@ export const Settings: FC<SettingsProps> = ({ className, settings, onChange }) =
             name,
         });
     }, [onChange, audioId, videoId, mediaDevices, instrument, midiInputId, midiOutputId, name]);
-
     return (
         <SettingsRoot>
             <div className="title">PlayAway Settings</div>
@@ -79,16 +79,20 @@ export const Settings: FC<SettingsProps> = ({ className, settings, onChange }) =
             <select id="setaudio" defaultValue={settings?.audioId} onChange={setAudioId}>
                 {mediaDevices
                     .filter((f) => f.kind === "audioinput")
+                    .map(({ deviceId, label }) => ({ deviceId: deviceId as string | undefined, label }))
+                    .concat({ deviceId: undefined, label: "None" })
                     .map((i) => (
                         <option key={i.deviceId} value={i.deviceId}>
-                            {i.label}
+                            {i.label === "" ? "Unknown" : i.label}
                         </option>
                     ))}
             </select>
             <label htmlFor="setVideo">Camera:</label>
-            <select id="setvideo" defaultValue={settings?.videoId} onSelect={setVideoId}>
+            <select id="setvideo" defaultValue={settings?.videoId} onChange={setVideoId}>
                 {mediaDevices
                     .filter((device) => device.kind === "videoinput")
+                    .map(({ deviceId, label }) => ({ deviceId: deviceId as string | undefined, label }))
+                    .concat({ deviceId: undefined, label: "None" })
                     .map((device) => (
                         <option key={device.deviceId} value={device.deviceId}>
                             {device.label}
@@ -127,4 +131,4 @@ export const Settings: FC<SettingsProps> = ({ className, settings, onChange }) =
             </select>
         </SettingsRoot>
     );
-};
+});

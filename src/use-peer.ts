@@ -66,9 +66,6 @@ function usePeerConnection(
 
     const onError = useCallback(
         (err: PeerError) => {
-            // if (err.type === "network") {
-            // setLocalPeerError(err);
-            // } else
             if (FATAL_ERRORS.includes(err.type)) {
                 console.log("Fatal Error " + err.type);
                 setReconnect(10);

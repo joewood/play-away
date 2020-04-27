@@ -67,6 +67,7 @@ const ModalRoot = styled.div`
     & option,
     & select {
         font-size: 1rem;
+        color: black;
     }
     & input,
     & select,

@@ -1,16 +1,12 @@
-import React, { memo, useCallback, useMemo, useState } from "react";
+import React, { memo, useCallback, useState } from "react";
 import useDimensions from "react-use-dimensions";
 import styled from "styled-components";
-import createPersistedState from "use-persisted-state";
 import { Connection } from "./connection";
 import { Header } from "./header";
 import { Modal, useModal } from "./modal";
 import { StatusBar } from "./statusbar";
 import { useMediaDevice } from "./use-media-device";
 import { usePeerConnections } from "./use-peer";
-
-const useMicrophoneState = createPersistedState<boolean>("microphone");
-const useCameraState = createPersistedState<boolean>("camera");
 
 interface RoomProps {
     className?: string;
@@ -19,11 +15,9 @@ interface RoomProps {
 const Player = memo<RoomProps>(({ className }) => {
     // Initialize Block
     const [ref, { width }] = useDimensions();
-    const [cameraOn, setCameraOn] = useCameraState(true);
-    const [microphoneOn, setMicrophoneOn] = useMicrophoneState(true);
     const { settings, setModal, ...modalProps } = useModal();
     const [room, setRoom] = useState<string>();
-
+    const { localStream, error: streamError, ...streamState } = useMediaDevice(settings.audioId, settings.videoId);
     const onShowHelp = useCallback(() => setModal((prev) => (prev === "help" ? undefined : "help")), [setModal]);
     const [audioContext, setAudioContext] = useState<AudioContext>();
     const onSetupAudioContext = useCallback(() => {
@@ -34,14 +28,7 @@ const Player = memo<RoomProps>(({ className }) => {
         if (!AudioContext) return;
         setAudioContext((prev) => (prev ? prev : new AudioContext()));
     }, []);
-    const mediaConstraints = useMemo<MediaStreamConstraints>(
-        () => ({
-            audio: microphoneOn ? { deviceId: settings?.audioId } : undefined,
-            video: cameraOn ? { deviceId: settings?.videoId, width: 150, height: 150 } : undefined,
-        }),
-        [cameraOn, microphoneOn, settings]
-    );
-    const [localStream] = useMediaDevice(mediaConstraints);
+
     // Connectivity Block
     const {
         isOpen: isConnected,
@@ -79,16 +66,13 @@ const Player = memo<RoomProps>(({ className }) => {
             <div className="main" onClick={onSetupAudioContext}>
                 <Header
                     name={localPeer?.id || ""}
-                    cameraOn={cameraOn}
-                    onCameraOn={setCameraOn}
-                    microphoneOn={microphoneOn}
                     room={room}
                     onLeave={onLeave}
-                    onMicrophoneOn={setMicrophoneOn}
                     onShowSettings={() => setModal("settings")}
                     onShowHelp={onShowHelp}
                     onJoinOn={() => setModal("join")}
                     isConnected={isConnected}
+                    {...streamState}
                 />
                 {connections.map((connection, i) => (
                     <div className="connection" key={i}>
@@ -135,6 +119,7 @@ const Player = memo<RoomProps>(({ className }) => {
         </div>
     );
 });
+Player.displayName = "Player";
 
 export default styled(Player)`
     position: relative;

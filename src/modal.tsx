@@ -8,7 +8,7 @@ import { Welcome } from "./welcome";
 type ModalType = "help" | "join" | "settings" | undefined;
 export function useModal() {
     const { settings, ...settingsProps } = useSettings();
-    const [showModal, setModal] = useState<ModalType>();
+    const [showModal, setModal] = useState<ModalType>(settings.name === "" ? "settings" : undefined);
     return { showModal, setModal, settings, ...settingsProps };
 }
 

@@ -26,6 +26,25 @@ export function useMediaDevices(): MediaDeviceInfo[] {
     return devices || [];
 }
 
+export function isVideoOn(stream: MediaStream | undefined) {
+    return stream && stream.getVideoTracks().every((m) => m.enabled);
+}
+function enableMicrophone(enabled: boolean, localStream: MediaStream) {
+    if (!!localStream) {
+        for (const track of localStream.getAudioTracks()) {
+            track.enabled = enabled;
+        }
+    }
+}
+
+function enableCamera(enabled: boolean, localStream: MediaStream) {
+    if (!!localStream) {
+        for (const track of localStream.getVideoTracks()) {
+            track.enabled = enabled;
+        }
+    }
+}
+
 const useMicrophoneState = createPersistedState<boolean>("microphone");
 const useCameraState = createPersistedState<boolean>("camera");
 
@@ -43,11 +62,18 @@ export function useMediaDevice(audioDeviceId: string | undefined, videoDeviceId:
     const [error, setError] = useState<any>();
     const [cameraOn, setCameraOn] = useCameraState(true);
     const [microphoneOn, setMicrophoneOn] = useMicrophoneState(true);
+    const onSetStream = useCallback(
+        (stream: MediaStream) => {
+            enableMicrophone(microphoneOn, stream);
+            enableCamera(cameraOn, stream);
+            setStream(stream);
+        },
+        [cameraOn, microphoneOn, setStream]
+    );
     const constraints = useMemo<MediaStreamConstraints>(() => {
-        // if (!localStream && !cameraOn && !microphoneOn) return { audio: undefined, video: undefined };
         return {
-            audio: audioDeviceId ? { deviceId: audioDeviceId } : undefined,
-            video: videoDeviceId ? { deviceId: videoDeviceId, width: 150, height: 150 } : undefined,
+            audio: audioDeviceId ? { deviceId: audioDeviceId } : true,
+            video: videoDeviceId ? { deviceId: videoDeviceId, width: 150, height: 150 } : true,
         };
     }, [audioDeviceId, videoDeviceId]);
 
@@ -60,7 +86,7 @@ export function useMediaDevice(audioDeviceId: string | undefined, videoDeviceId:
         if (!!constraints.audio || !!constraints.video) {
             navigator.mediaDevices
                 .getUserMedia(constraints)
-                .then(setStream)
+                .then(onSetStream)
                 .catch((err) => {
                     console.log("The following getUserMedia error occured: " + err);
                     setError(err);
@@ -68,7 +94,7 @@ export function useMediaDevice(audioDeviceId: string | undefined, videoDeviceId:
         } else {
             setStream(undefined);
         }
-    }, [setStream, constraints, setError]);
+    }, [constraints, onSetStream, setError]);
     useEffect(() => {
         return () => {
             if (!!localStream) localStream.getTracks().forEach((t) => t.stop());
@@ -77,9 +103,7 @@ export function useMediaDevice(audioDeviceId: string | undefined, videoDeviceId:
     const onMicrophoneOn = useCallback(
         (on: boolean) => {
             if (!!localStream) {
-                for (const track of localStream.getAudioTracks()) {
-                    track.enabled = on;
-                }
+                enableMicrophone(on, localStream);
                 setMicrophoneOn(on);
             }
         },
@@ -88,9 +112,7 @@ export function useMediaDevice(audioDeviceId: string | undefined, videoDeviceId:
     const onCameraOn = useCallback(
         (on: boolean) => {
             if (!!localStream) {
-                for (const track of localStream.getVideoTracks()) {
-                    track.enabled = on;
-                }
+                enableCamera(on, localStream);
                 setCameraOn(on);
             }
         },

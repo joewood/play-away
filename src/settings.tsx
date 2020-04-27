@@ -76,7 +76,12 @@ export const Settings = memo<SettingsProps>(({ className, settings, onChange }) 
             <label htmlFor="nameField">Unique Name:</label>
             <input type="text" onChange={setName} value={name}></input>
             <label htmlFor="setaudio">Microphone:</label>
-            <select id="setaudio" defaultValue={settings?.audioId} onChange={setAudioId}>
+            <select
+                id="setaudio"
+                defaultValue={settings?.audioId}
+                onChange={setAudioId}
+                disabled={mediaDevices.every((m) => !m.label)}
+            >
                 {mediaDevices
                     .filter((f) => f.kind === "audioinput")
                     .map(({ deviceId, label }) => ({ deviceId: deviceId as string | undefined, label }))
@@ -88,7 +93,12 @@ export const Settings = memo<SettingsProps>(({ className, settings, onChange }) 
                     ))}
             </select>
             <label htmlFor="setVideo">Camera:</label>
-            <select id="setvideo" defaultValue={settings?.videoId} onChange={setVideoId}>
+            <select
+                id="setvideo"
+                defaultValue={settings?.videoId}
+                onChange={setVideoId}
+                disabled={mediaDevices.every((m) => !m.label)}
+            >
                 {mediaDevices
                     .filter((device) => device.kind === "videoinput")
                     .map(({ deviceId, label }) => ({ deviceId: deviceId as string | undefined, label }))

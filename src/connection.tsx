@@ -1,6 +1,6 @@
 import Peer, { DataConnection, MediaConnection } from "peerjs";
 import * as React from "react";
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef, useMemo } from "react";
 import { FaPhone } from "react-icons/fa";
 import styled from "styled-components";
 import { PianoInput, usePiano } from "./piano";
@@ -8,6 +8,7 @@ import { SettingsType } from "./settings";
 import { useAnswerRemote, useCallRemote, useStreamFromRemoteConnection } from "./use-media-stream";
 import { MidiEvent, useMidiInputs } from "./use-midi";
 import { useConnection } from "./use-peer";
+import { isVideoOn } from "./use-media-device";
 
 /** Plug a stream into a video element and play it
  * @returns Video Ref for use on a video tag
@@ -107,16 +108,18 @@ const _Connection = memo<ConnectionProps>(
         }, [midiInputData, onMidiEvent]);
 
         const videoStream = isLocal ? localStream : remoteStream;
+        const videoOn = useMemo(() => isVideoOn(videoStream), [videoStream]);
+
         return (
             <div className={className}>
-                {videoStream && (
+                {videoOn && (
                     <div className="video">
                         <Video stream={videoStream} width={150} muted={isLocal} />
                     </div>
                 )}
                 <div className="piano">
                     <PianoInput
-                        width={videoStream ? width - 150 - 4 : width}
+                        width={videoOn ? width - 150 - 4 : width}
                         instrumentName={settings.instrument}
                         local={!connection}
                         connected={isConnected && !disabled}

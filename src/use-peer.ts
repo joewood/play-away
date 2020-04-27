@@ -35,11 +35,11 @@ interface UsePeer<TData extends {}> {
  * @returns Connected state, Peer object, Data Connection, MediaConnect and error
  */
 function usePeerConnection(
-    opts: { brokerId: string } = { brokerId: "" }
+    name: string
 ): [boolean, Peer | undefined, DataConnection | undefined, MediaConnection | undefined, PeerError | undefined] {
     const [isOpen, setIsOpen] = useState(false);
     const [localPeer, setLocalPeer] = useState<Peer>();
-    const [localPeerId, setLocalPeerId] = useState(opts.brokerId);
+    const [localPeerId, setLocalPeerId] = useState(name);
     const [error, setLocalPeerError] = useState<PeerError>();
     const [remoteCallingMediaConnection, setRemoteCallingMediaConnection] = useState<MediaConnection>();
     const [connection, setConnection] = useState<DataConnection>();
@@ -127,7 +127,7 @@ function usePeerConnection(
         if (!!localPeer) return;
         if (reconnect !== 0) return;
         setLocalPeer(
-            new Peer(opts.brokerId, {
+            new Peer(name, {
                 host: "play-away.azurewebsites.net",
                 port: 443,
                 secure: true,
@@ -136,15 +136,15 @@ function usePeerConnection(
             // new Peer(opts.brokerId, { host: "localhost", port: 8080, path: "peerjs/playaway" })
         );
         return onDestroyPeer;
-    }, [localPeer, setLocalPeer, reconnect, onDestroyPeer, opts.brokerId]);
+    }, [localPeer, setLocalPeer, reconnect, onDestroyPeer, name]);
 
     return [isOpen, localPeer, connection, remoteCallingMediaConnection, error];
 }
 
 /** Create PeerJS connection and track connections */
-export function usePeerConnections(opts: { brokerId: string } = { brokerId: "" }) {
+export function usePeerConnections(name: string) {
     const [connections, setConnections] = useState<Peer.DataConnection[]>([]);
-    const [isOpen, localPeer, connection, remoteCallingMediaConnection, peerError] = usePeerConnection(opts);
+    const [isOpen, localPeer, connection, remoteCallingMediaConnection, peerError] = usePeerConnection(name);
     // Track inbound connectionsServer mode - when a connection arrives register it
     useEffect(() => {
         if (!connection) return;

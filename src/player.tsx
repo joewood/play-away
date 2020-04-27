@@ -40,9 +40,7 @@ const Player = memo<RoomProps>(({ className }) => {
         connectToPeer,
         removeConnection,
         ...peerData
-    } = usePeerConnections({
-        brokerId: settings.name,
-    });
+    } = usePeerConnections(settings.name);
     const onLeave = useCallback(() => {
         for (const c of connections) {
             removeConnection(c);

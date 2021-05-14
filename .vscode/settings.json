@@ -1,0 +1,8 @@
+{
+    "appService.zipIgnorePattern": [
+        "node_modules{,/**}",
+        ".vscode{,/**}"
+    ],
+    "appService.defaultWebAppToDeploy": "/subscriptions/a31bc785-e192-49bc-b0c9-321a4574087d/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/play-away",
+    "appService.deploySubpath": "server"
+}

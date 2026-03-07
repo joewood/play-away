@@ -1,5 +1,5 @@
 import React from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 import PlayerSizer from "./player";
 import { createGlobalStyle } from "styled-components";
 
@@ -26,12 +26,17 @@ body {
   }
   `;
 
-ReactDOM.render(
-    <React.StrictMode>
-        <GlobalStyle />
-        <PlayerSizer />
-    </React.StrictMode>,
-    document.getElementById("root")
+const root = document.getElementById("root");
+
+if (!root) {
+  throw new Error("Root element not found");
+}
+
+createRoot(root).render(
+  <React.StrictMode>
+    <GlobalStyle />
+    <PlayerSizer />
+  </React.StrictMode>
 );
 
 // If you want your app to work offline and load faster, you can change

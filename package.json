@@ -25,7 +25,7 @@
         "use-persisted-state": "^0.3.3"
     },
     "devDependencies": {
-        "@vitejs/plugin-react": "^5.0.1",
+        "@vitejs/plugin-react": "^6.0.1",
         "vite": "^7.1.4"
     },
     "scripts": {
